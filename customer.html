@@ -3,114 +3,168 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>حجز دور | Hamza Qashtam</title>
+  <title>حجز دور | صالونك</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
-    :root {
-      --bg-main: #0b0f19;
-      --panel-bg: #111827;
-      --card-bg: #1f2937;
-      --primary: #3b82f6;
-      --accent: #10b981;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --border: #374151;
-    }
+    :root { --bg: #0b0f19; --card: #111827; --primary: #3b82f6; --accent: #10b981; --text: #f9fafb; --border: #374151; }
     * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; margin: 0; padding: 0; }
-    body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding: 20px 16px; }
-    .container { max-width: 480px; margin: 0 auto; }
-    .card { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
-    .form-control { width: 100%; background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; font-size: 15px; margin-bottom: 12px; outline: none; }
-    .btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 14px; border-radius: 10px; font-weight: 800; font-size: 16px; cursor: pointer; }
-    .ticket-box { background: var(--card-bg); border: 2px dashed var(--accent); border-radius: 14px; padding: 20px; text-align: center; margin-top: 15px; }
-    .ticket-num { font-size: 36px; font-weight: 800; color: var(--accent); margin: 10px 0; }
-    .hidden { display: none; }
+    body { background: var(--bg); color: var(--text); padding: 15px; background-size: cover; }
+    .hidden { display: none !important; }
+    .card { background: rgba(17, 24, 39, 0.9); border-radius: 14px; padding: 16px; margin-bottom: 15px; border: 1px solid var(--border); }
+    .header-img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; }
+    .input { width: 100%; padding: 12px; margin: 6px 0; background: #1f2937; border: 1px solid var(--border); color: #fff; border-radius: 8px; }
+    .btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 14px; border-radius: 8px; font-weight: 800; cursor: pointer; }
+    .time-slot { display: inline-block; padding: 8px 12px; background: #1f2937; margin: 4px; border-radius: 6px; cursor: pointer; }
+    .time-slot.disabled { background: #374151; color: #9ca3af; text-decoration: line-through; cursor: not-allowed; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="card">
-      <h2 style="text-align: center; margin-bottom: 15px;">حجز دور في الصالون ✂️</h2>
-      
-      <div class="form-group">
-        <label style="font-size: 13px; color: var(--text-muted);">أدخل كود الصالون</label>
-        <input type="text" id="salonCode" class="form-control" placeholder="أدخل كود الصالون">
-      </div>
+  <!-- اقتران بالصالون لمرة واحدة -->
+  <div id="pairSec" class="card">
+    <h2>الاقتران بالصالون ✂️</h2>
+    <input type="text" id="codeIn" class="input" placeholder="أدخل كود الصالون أو مسح QR">
+    <button class="btn" id="pairBtn">اقتران بالصفحة</button>
+  </div>
 
-      <div class="form-group">
-        <label style="font-size: 13px; color: var(--text-muted);">الاسم الكريم</label>
-        <input type="text" id="custName" class="form-control" placeholder="اسمك الكامل">
-      </div>
+  <div id="mainSec" class="hidden">
+    <img id="headerImg" class="header-img hidden">
+    <h2 id="salonTitle">صالون الحلاقة</h2>
 
-      <div class="form-group">
-        <label style="font-size: 13px; color: var(--text-muted);">رقم الهاتف</label>
-        <input type="tel" id="custPhone" class="form-control" placeholder="رقم هاتفك">
-      </div>
-
-      <button class="btn" id="bookBtn">تأكيد حجز الدور 🎫</button>
+    <!-- التسجيل الأول -->
+    <div id="regSec" class="card">
+      <h4>تسجيل بياناتك لمرة واحدة</h4>
+      <input type="text" id="cName" class="input" placeholder="الاسم الشخصي">
+      <input type="tel" id="cPhone" class="input" placeholder="رقم الهاتف">
+      <input type="number" id="cAge" class="input" placeholder="العمر">
+      <button class="btn" onclick="saveCustomerInfo()">حفظ وحجز دور</button>
     </div>
 
-    <div id="ticketResult" class="card hidden">
-      <div class="ticket-box">
-        <h3>تم الحجز بنجاح!</h3>
-        <p style="color: var(--text-muted); margin-top: 5px;">ترتيبك الحالي في الصالون:</p>
-        <div class="ticket-num" id="posNumber">#1</div>
-        <p id="salonNameHolder" style="font-weight: 700; color: var(--primary);"></p>
-      </div>
+    <!-- حجز الموعد والدور -->
+    <div id="bookingSec" class="card hidden">
+      <h4>اختر الخدمة والموعد</h4>
+      <select id="srvSelect" class="input"></select>
+      
+      <h4>اختر الساعة (الأوقات الشاغرة)</h4>
+      <div id="timeSlotsContainer"></div>
+
+      <button class="btn" style="margin-top:10px;" onclick="confirmBooking()">تأكيد حجز الدور 🎫</button>
+    </div>
+
+    <div id="myTicket" class="card hidden" style="text-align:center;">
+      <h3>رقم دورك الحالي</h3>
+      <h1 id="ticketNum" style="color:var(--accent); font-size:48px;">#0</h1>
+      <p id="queueStatus">بانتظار دورك...</p>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const bookBtn = document.getElementById('bookBtn');
-      const salonCode = document.getElementById('salonCode');
-      const custName = document.getElementById('custName');
-      const custPhone = document.getElementById('custPhone');
-      const ticketResult = document.getElementById('ticketResult');
-      const posNumber = document.getElementById('posNumber');
-      const salonNameHolder = document.getElementById('salonNameHolder');
+    const firebaseConfig = { databaseURL: "https://salon-system-hq-default-rtdb.firebaseio.com/" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-      function getSalons() {
-        return JSON.parse(localStorage.getItem('salon_app_db')) || [];
-      }
+    let mySalonCode = localStorage.getItem('cust_salon_code');
+    let selectedTime = null;
 
-      function getQueue(code) {
-        return JSON.parse(localStorage.getItem('queue_' + code)) || [];
-      }
+    if (mySalonCode) initCustomer(mySalonCode);
 
-      function saveQueue(code, queue) {
-        localStorage.setItem('queue_' + code, JSON.stringify(queue));
-      }
-
-      bookBtn.addEventListener('click', function() {
-        const code = salonCode.value.trim();
-        const name = custName.value.trim();
-        const phone = custPhone.value.trim();
-
-        if (!code || !name || !phone) {
-          alert('يرجى تعبئة كافة البيانات بشكل صحيح!');
-          return;
-        }
-
-        const salons = getSalons();
-        const salon = salons.find(s => s.code === code);
-
-        if (!salon) {
-          alert('كود الصالون غير صحيح! تأكد من الكود المكتوب.');
-          return;
-        }
-
-        let queue = getQueue(code);
-        queue.push({ name: name, phone: phone, time: new Date().toLocaleTimeString('ar-EG') });
-        saveQueue(code, queue);
-
-        salonNameHolder.innerText = salon.name;
-        posNumber.innerText = '#' + queue.length;
-        ticketResult.classList.remove('hidden');
-
-        alert(`تم حجز دورك بنجاح في ${salon.name}!\nترتيبك هو: #${queue.length}`);
+    document.getElementById('pairBtn').addEventListener('click', () => {
+      const c = document.getElementById('codeIn').value.trim();
+      db.ref('salons/' + c).once('value', snap => {
+        if(!snap.exists()) return alert('رمز الصالون غير صحيحة');
+        localStorage.setItem('cust_salon_code', c);
+        initCustomer(c);
       });
     });
+
+    function initCustomer(code) {
+      document.getElementById('pairSec').classList.add('hidden');
+      document.getElementById('mainSec').classList.remove('hidden');
+
+      db.ref(`salons/${code}`).on('value', snap => {
+        const data = snap.val();
+        document.getElementById('salonTitle').innerText = data.info.name;
+
+        // تطبيق الخلفيات والهوية
+        if (data.settings.bgUrl) document.body.style.backgroundImage = `url('${data.settings.bgUrl}')`;
+        if (data.settings.headerUrl) {
+          const img = document.getElementById('headerImg');
+          img.src = data.settings.headerUrl;
+          img.classList.remove('hidden');
+        }
+
+        // تحضير الخدمات
+        const srvSelect = document.getElementById('srvSelect');
+        srvSelect.innerHTML = '';
+        if (data.services) {
+          Object.keys(data.services).forEach(k => {
+            const s = data.services[k];
+            srvSelect.innerHTML += `<option value="${s.price}">${s.name} - ${s.price} JOD (${s.time} دقيقة)</option>`;
+          });
+        }
+
+        renderTimeSlots(data.queue || {});
+      });
+
+      if (localStorage.getItem('cust_name')) {
+        document.getElementById('regSec').classList.add('hidden');
+        document.getElementById('bookingSec').classList.remove('hidden');
+      }
+    }
+
+    function renderTimeSlots(queue) {
+      const container = document.getElementById('timeSlotsContainer');
+      container.innerHTML = '';
+      const times = ["04:00", "04:30", "05:00", "05:30", "06:00", "06:30", "07:00", "07:30", "08:00"];
+
+      const bookedTimes = Object.values(queue).map(q => q.time);
+
+      times.forEach(t => {
+        const isBooked = bookedTimes.includes(t);
+        const span = document.createElement('span');
+        span.className = `time-slot ${isBooked ? 'disabled' : ''}`;
+        span.innerText = t;
+        if (!isBooked) {
+          span.onclick = () => {
+            selectedTime = t;
+            alert('تم اختيار موعد: ' + t);
+          };
+        }
+        container.appendChild(span);
+      });
+    }
+
+    window.saveCustomerInfo = () => {
+      localStorage.setItem('cust_name', document.getElementById('cName').value);
+      localStorage.setItem('cust_phone', document.getElementById('cPhone').value);
+      document.getElementById('regSec').classList.add('hidden');
+      document.getElementById('bookingSec').classList.remove('hidden');
+    };
+
+    window.confirmBooking = () => {
+      if (!selectedTime) return alert('يرجى اختيار الوقت!');
+      
+      db.ref(`salons/${mySalonCode}/stats/totalCounter`).transaction(curr => {
+        let nextNum = (curr || 0) + 1;
+        if (nextNum > 1000) nextNum = 1; // التصفير التلقائي عند الوصول للرقم 1000
+        return nextNum;
+      }, (err, committed, snap) => {
+        const myNum = snap.val();
+        const name = localStorage.getItem('cust_name');
+        const phone = localStorage.getItem('cust_phone');
+        const srvText = document.getElementById('srvSelect').selectedOptions[0].text;
+        const price = document.getElementById('srvSelect').value;
+
+        db.ref(`salons/${mySalonCode}/queue`).push({
+          number: myNum, name, phone, service: srvText, price, time: selectedTime
+        }).then(() => {
+          document.getElementById('bookingSec').classList.add('hidden');
+          document.getElementById('myTicket').classList.remove('hidden');
+          document.getElementById('ticketNum').innerText = '#' + myNum;
+        });
+      });
+    };
   </script>
 </body>
 </html>
