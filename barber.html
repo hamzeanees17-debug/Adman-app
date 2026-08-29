@@ -1,109 +1,131 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تطبيق الحلاق</title>
-    <style>
-        body { font-family: system-ui, sans-serif; background: #18181b; color: #fff; padding: 15px; margin: 0; text-align: center; }
-        .card { background: #27272a; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
-        input, button { padding: 12px; margin: 5px 0; width: 90%; border-radius: 8px; border: none; font-size: 15px; }
-        button { background: #2563eb; color: #fff; font-weight: bold; cursor: pointer; }
-        .hidden { display: none; }
-        .q-item { background: #3f3f46; padding: 10px; margin: 5px 0; border-radius: 8px; text-align: right; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة الحلاق | Hamza Qashtam</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0b0f19;
+      --panel-bg: #111827;
+      --card-bg: #1f2937;
+      --primary: #3b82f6;
+      --accent: #10b981;
+      --danger: #ef4444;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --border: #374151;
+    }
+    * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; margin: 0; padding: 0; }
+    body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding: 20px 16px; }
+    .container { max-width: 500px; margin: 0 auto; }
+    .card { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
+    .form-control { width: 100%; background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; font-size: 16px; margin: 10px 0; text-align: center; outline: none; }
+    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer; }
+    .queue-item { background: var(--card-bg); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
+    .btn-done { background: var(--accent); color: #000; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .hidden { display: none; }
+  </style>
 </head>
 <body>
-    <div id="loginSec" class="card">
-        <h2>تسجيل دخول الحلاق 💈</h2>
-        <input type="text" id="barberCode" placeholder="أدخل كود التفعيل">
-        <button onclick="login()">دخول</button>
+  <div class="container">
+    <!-- تسجيل الدخول بالحساب -->
+    <div id="loginSection" class="card">
+      <h2>تسجيل دخول الحلاق 💈</h2>
+      <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">أدخل كود التفعيل الخاص بالصالون</p>
+      <input type="text" id="salonCodeInput" class="form-control" placeholder="أدخل الكود (مثال: 123456)">
+      <button class="btn" id="loginBtn">دخول لوحة التحكّم</button>
     </div>
 
-    <div id="appSec" class="hidden">
-        <h2 id="salonTitle"></h2>
-        <div class="card">
-            <h3>رقم الدور الحالي: <span id="currentNum" style="color:#60a5fa; font-size: 32px;">0</span></h3>
-            <button onclick="nextRole()" style="background:#16a34a;">الزبون التالي / إنهاء الدور</button>
-        </div>
+    <!-- لوحة إدارة الأدوار -->
+    <div id="dashboardSection" class="hidden">
+      <div class="card">
+        <h2 id="salonTitle">صالون الحلاقة</h2>
+        <p style="color: var(--accent); font-weight: bold; margin-top: 5px;" id="queueCount">عدد المنتظرين: 0</p>
+      </div>
 
-        <div class="card">
-            <h3>قائمة المنتظرين</h3>
-            <div id="queueList">لا يوجد زبائن حالياً</div>
+      <div class="card">
+        <h3 style="margin-bottom: 15px; font-size: 18px;">قائمة الدور الحالية</h3>
+        <div id="customerQueue">
+          <p style="color: var(--text-muted);">لا يوجد زبائن في الانتظار حالياً</p>
         </div>
+      </div>
     </div>
+  </div>
 
-    <script>
-        const GITHUB_TOKEN = "ضع_GITHUB_PERSONAL_ACCESS_TOKEN_هنا";
-        const REPO_OWNER = "اسم_حسابك_على_GITHUB";
-        const REPO_NAME = "اسم_المستودع";
-        const FILE_PATH = "data.json";
-        let currentSalonIndex = -1;
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const loginBtn = document.getElementById('loginBtn');
+      const codeInput = document.getElementById('salonCodeInput');
+      const loginSection = document.getElementById('loginSection');
+      const dashboardSection = document.getElementById('dashboardSection');
+      const salonTitle = document.getElementById('salonTitle');
+      const customerQueue = document.getElementById('customerQueue');
+      const queueCount = document.getElementById('queueCount');
 
-        async function getGithubData() {
-            let res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
-                headers: { "Authorization": `token ${GITHUB_TOKEN}` }
-            });
-            let data = await res.json();
-            return { content: JSON.parse(atob(data.content)), sha: data.sha };
+      let currentSalon = null;
+
+      function getSalons() {
+        return JSON.parse(localStorage.getItem('salon_app_db')) || [];
+      }
+
+      function getQueue(code) {
+        return JSON.parse(localStorage.getItem('queue_' + code)) || [];
+      }
+
+      function saveQueue(code, queue) {
+        localStorage.setItem('queue_' + code, JSON.stringify(queue));
+      }
+
+      function renderQueue() {
+        if (!currentSalon) return;
+        const queue = getQueue(currentSalon.code);
+        queueCount.innerText = `عدد المنتظرين: ${queue.length}`;
+
+        if (queue.length === 0) {
+          customerQueue.innerHTML = '<p style="color: var(--text-muted);">لا يوجد زبائن في الانتظار حالياً</p>';
+          return;
         }
 
-        async function login() {
-            let code = document.getElementById('barberCode').value;
-            let { content } = await getGithubData();
-            let idx = content.findIndex(s => s.code === code);
+        customerQueue.innerHTML = queue.map((c, index) => `
+          <div class="queue-item">
+            <div>
+              <strong>#${index + 1} - ${c.name}</strong>
+              <div style="font-size: 12px; color: var(--text-muted);">📞 ${c.phone}</div>
+            </div>
+            <button class="btn-done" onclick="finishCustomer(${index})">إنهاء الدور ✅</button>
+          </div>
+        `).join('');
+      }
 
-            if(idx === -1) return alert('الكود غير صحيح');
-            if(!content[idx].active) return alert('الاشتراك معطل من الإدارة');
+      loginBtn.addEventListener('click', function() {
+        const code = codeInput.value.trim();
+        const salons = getSalons();
+        const found = salons.find(s => s.code === code);
 
-            currentSalonIndex = idx;
-            document.getElementById('loginSec').classList.add('hidden');
-            document.getElementById('appSec').classList.remove('hidden');
-            document.getElementById('salonTitle').innerText = content[idx].name;
-            loadQueue();
+        if (!found) {
+          alert('كود التفعيل غير صحيح! تأكد من الكود المولد في صفحة الأدمن.');
+          return;
         }
 
-        async function loadQueue() {
-            let { content } = await getGithubData();
-            let salon = content[currentSalonIndex];
-            document.getElementById('currentNum').innerText = salon.currentNum || 0;
+        currentSalon = found;
+        salonTitle.innerText = found.name;
+        loginSection.classList.add('hidden');
+        dashboardSection.classList.remove('hidden');
+        renderQueue();
 
-            let html = '';
-            (salon.queue || []).forEach((q) => {
-                html += `<div class="q-item">
-                    <p><b>الاسم:</b> ${q.name} | <b>رقم الدور:</b> ${q.roleNum}</p>
-                    <p><b>الخدمة:</b> ${q.service}</p>
-                </div>`;
-            });
-            document.getElementById('queueList').innerHTML = html || 'القائمة فارغة';
-        }
+        // تحديث تلقائي كل 3 ثوانٍ
+        setInterval(renderQueue, 3000);
+      });
 
-        async function nextRole() {
-            let { content, sha } = await getGithubData();
-            let salon = content[currentSalonIndex];
-
-            salon.currentNum = (salon.currentNum || 0) + 1;
-            if(salon.currentNum > 999) salon.currentNum = 1; // يصفر تلقائياً بعد الرقم 1000
-
-            if(salon.queue && salon.queue.length > 0) {
-                salon.queue.shift(); // حذف الزبون المقضي دوره
-            }
-
-            await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
-                method: "PUT",
-                headers: {
-                    "Authorization": `token ${GITHUB_TOKEN}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    message: "تحديث الدور",
-                    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
-                    sha: sha
-                })
-            });
-
-            loadQueue();
-        }
-    </script>
+      window.finishCustomer = function(index) {
+        let queue = getQueue(currentSalon.code);
+        queue.splice(index, 1);
+        saveQueue(currentSalon.code, queue);
+        renderQueue();
+      };
+    });
+  </script>
 </body>
 </html>
