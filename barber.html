@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق الحلاق</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #18181b; color: #fff; padding: 15px; margin: 0; text-align: center; }
+        .card { background: #27272a; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        input, button { padding: 12px; margin: 5px 0; width: 90%; border-radius: 8px; border: none; font-size: 15px; }
+        button { background: #2563eb; color: #fff; font-weight: bold; cursor: pointer; }
+        .hidden { display: none; }
+        .q-item { background: #3f3f46; padding: 10px; margin: 5px 0; border-radius: 8px; text-align: right; }
+    </style>
+</head>
+<body>
+    <div id="loginSec" class="card">
+        <h2>تسجيل دخول الحلاق 💈</h2>
+        <input type="text" id="barberCode" placeholder="أدخل كود التفعيل">
+        <button onclick="login()">دخول</button>
+    </div>
+
+    <div id="appSec" class="hidden">
+        <h2 id="salonTitle"></h2>
+        <div class="card">
+            <h3>رقم الدور الحالي: <span id="currentNum" style="color:#60a5fa; font-size: 32px;">0</span></h3>
+            <button onclick="nextRole()" style="background:#16a34a;">الزبون التالي / إنهاء الدور</button>
+        </div>
+
+        <div class="card">
+            <h3>قائمة المنتظرين</h3>
+            <div id="queueList">لا يوجد زبائن حالياً</div>
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_TOKEN = "ضع_GITHUB_PERSONAL_ACCESS_TOKEN_هنا";
+        const REPO_OWNER = "اسم_حسابك_على_GITHUB";
+        const REPO_NAME = "اسم_المستودع";
+        const FILE_PATH = "data.json";
+        let currentSalonIndex = -1;
+
+        async function getGithubData() {
+            let res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                headers: { "Authorization": `token ${GITHUB_TOKEN}` }
+            });
+            let data = await res.json();
+            return { content: JSON.parse(atob(data.content)), sha: data.sha };
+        }
+
+        async function login() {
+            let code = document.getElementById('barberCode').value;
+            let { content } = await getGithubData();
+            let idx = content.findIndex(s => s.code === code);
+
+            if(idx === -1) return alert('الكود غير صحيح');
+            if(!content[idx].active) return alert('الاشتراك معطل من الإدارة');
+
+            currentSalonIndex = idx;
+            document.getElementById('loginSec').classList.add('hidden');
+            document.getElementById('appSec').classList.remove('hidden');
+            document.getElementById('salonTitle').innerText = content[idx].name;
+            loadQueue();
+        }
+
+        async function loadQueue() {
+            let { content } = await getGithubData();
+            let salon = content[currentSalonIndex];
+            document.getElementById('currentNum').innerText = salon.currentNum || 0;
+
+            let html = '';
+            (salon.queue || []).forEach((q) => {
+                html += `<div class="q-item">
+                    <p><b>الاسم:</b> ${q.name} | <b>رقم الدور:</b> ${q.roleNum}</p>
+                    <p><b>الخدمة:</b> ${q.service}</p>
+                </div>`;
+            });
+            document.getElementById('queueList').innerHTML = html || 'القائمة فارغة';
+        }
+
+        async function nextRole() {
+            let { content, sha } = await getGithubData();
+            let salon = content[currentSalonIndex];
+
+            salon.currentNum = (salon.currentNum || 0) + 1;
+            if(salon.currentNum > 999) salon.currentNum = 1; // يصفر تلقائياً بعد الرقم 1000
+
+            if(salon.queue && salon.queue.length > 0) {
+                salon.queue.shift(); // حذف الزبون المقضي دوره
+            }
+
+            await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `token ${GITHUB_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    message: "تحديث الدور",
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+                    sha: sha
+                })
+            });
+
+            loadQueue();
+        }
+    </script>
+</body>
+</html>

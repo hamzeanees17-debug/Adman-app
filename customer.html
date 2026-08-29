@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تطبيق الزبون</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #0284c7; color: #fff; padding: 15px; margin: 0; text-align: center; }
+        .card { background: #0369a1; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+        input, button, select { padding: 12px; margin: 5px 0; width: 90%; border-radius: 8px; border: none; font-size: 15px; }
+        button { background: #0284c7; color: #fff; font-weight: bold; cursor: pointer; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div id="pairSec" class="card">
+        <h2>الاقتران بالحلاق 💈</h2>
+        <input type="text" id="pairCode" placeholder="أدخل كود الصالون">
+        <button onclick="pair()">اقتران</button>
+    </div>
+
+    <div id="clientSec" class="hidden">
+        <h2 id="salonNameDisplay"></h2>
+        <div class="card">
+            <h3>الدور الحالي الآن: <span id="liveNum" style="font-size: 32px; font-weight: bold;">0</span></h3>
+        </div>
+
+        <div class="card">
+            <h3>حجز دور جديد</h3>
+            <input type="text" id="custName" placeholder="الاسم الكامل">
+            <input type="text" id="custPhone" placeholder="رقم الهاتف">
+            <select id="serviceSelect">
+                <option value="حلاقة شعر (30 دقيقة)">حلاقة شعر (30 دقيقة)</option>
+                <option value="حلاقة لحية (15 دقيقة)">حلاقة لحية (15 دقيقة)</option>
+                <option value="كامل (45 دقيقة)">خدمة كاملة (45 دقيقة)</option>
+            </select>
+            <button onclick="book()">تأكيد حجز الدور</button>
+        </div>
+    </div>
+
+    <script>
+        const GITHUB_TOKEN = "ضع_GITHUB_PERSONAL_ACCESS_TOKEN_هنا";
+        const REPO_OWNER = "اسم_حسابك_على_GITHUB";
+        const REPO_NAME = "اسم_المستودع";
+        const FILE_PATH = "data.json";
+        let pairedSalonIndex = -1;
+
+        async function getGithubData() {
+            let res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                headers: { "Authorization": `token ${GITHUB_TOKEN}` }
+            });
+            let data = await res.json();
+            return { content: JSON.parse(atob(data.content)), sha: data.sha };
+        }
+
+        async function pair() {
+            let code = document.getElementById('pairCode').value;
+            let { content } = await getGithubData();
+            let idx = content.findIndex(s => s.code === code);
+
+            if(idx === -1) return alert('الكود غير صحيح');
+            if(!content[idx].active) return alert('الصالون غير موصول بالخدمة حالياً');
+
+            pairedSalonIndex = idx;
+            document.getElementById('pairSec').classList.add('hidden');
+            document.getElementById('clientSec').classList.remove('hidden');
+            document.getElementById('salonNameDisplay').innerText = content[idx].name;
+
+            setInterval(updateLiveNum, 4000); // تحديث القراءة تلقائياً كل 4 ثوانٍ
+        }
+
+        async function updateLiveNum() {
+            let { content } = await getGithubData();
+            document.getElementById('liveNum').innerText = content[pairedSalonIndex].currentNum || 0;
+        }
+
+        async function book() {
+            let name = document.getElementById('custName').value;
+            let phone = document.getElementById('custPhone').value;
+            let service = document.getElementById('serviceSelect').value;
+
+            if(!name || !phone) return alert('يرجى تعبئة كافة التفاصيل');
+
+            let { content, sha } = await getGithubData();
+            let salon = content[pairedSalonIndex];
+
+            let lastRole = salon.queue && salon.queue.length > 0 ? salon.queue[salon.queue.length - 1].roleNum : (salon.currentNum || 0);
+            let myRole = lastRole + 1;
+
+            if(!salon.queue) salon.queue = [];
+            salon.queue.push({ name, phone, service, roleNum: myRole });
+
+            await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `token ${GITHUB_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    message: "حجز دور جديد",
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(content, null, 2)))),
+                    sha: sha
+                })
+            });
+
+            alert('تم حجز دورك بنجاح! رقم دورك هو: ' + myRole);
+        }
+    </script>
+</body>
+</html>

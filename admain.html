@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة الصالونات</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #0f172a; color: #fff; padding: 15px; margin: 0; text-align: center; }
+        .card { background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #334155; }
+        input, button { padding: 12px; margin: 5px 0; width: 90%; border-radius: 8px; border: none; font-size: 15px; }
+        button { background: #22c55e; color: #fff; font-weight: bold; cursor: pointer; }
+        .salon { border-bottom: 1px solid #334155; padding: 10px 0; text-align: right; }
+    </style>
+</head>
+<body>
+    <h2>لوحة تحكم الإدارة 💈</h2>
+    <div class="card">
+        <h3>إضافة صالون جديد</h3>
+        <input type="text" id="name" placeholder="اسم الصالون">
+        <input type="text" id="phone" placeholder="رقم الهاتف">
+        <button onclick="addSalon()">توليد الكود والتفعيل</button>
+    </div>
+    <div class="card">
+        <h3>الصالونات المسجلة</h3>
+        <div id="salonsList">جاري تحميل البيانات...</div>
+    </div>
+
+    <script>
+        const GITHUB_TOKEN = "ضع_GITHUB_PERSONAL_ACCESS_TOKEN_هنا";
+        const REPO_OWNER = "اسم_حسابك_على_GITHUB";
+        const REPO_NAME = "اسم_المستودع";
+        const FILE_PATH = "data.json";
+
+        async function getGithubData() {
+            try {
+                let res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                    headers: { "Authorization": `token ${GITHUB_TOKEN}` }
+                });
+                let data = await res.json();
+                let content = JSON.parse(atob(data.content));
+                return { content, sha: data.sha };
+            } catch(e) { return { content: [], sha: "" }; }
+        }
+
+        async function saveGithubData(newContent, sha) {
+            await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": `token ${GITHUB_TOKEN}`,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    message: "تحديث البيانات من الإدارة",
+                    content: btoa(unescape(encodeURIComponent(JSON.stringify(newContent, null, 2)))),
+                    sha: sha
+                })
+            });
+            loadSalons();
+        }
+
+        async function addSalon() {
+            let name = document.getElementById('name').value;
+            let phone = document.getElementById('phone').value;
+            if(!name || !phone) return alert('يرجى تعبئة كامل الحقول');
+
+            let code = 'BARBER-' + Math.floor(1000 + Math.random() * 9000);
+            let { content, sha } = await getGithubData();
+
+            content.push({ code, name, phone, active: true, currentNum: 0, queue: [] });
+            await saveGithubData(content, sha);
+            alert('تم إنشاء الكود: ' + code);
+        }
+
+        async function loadSalons() {
+            let { content } = await getGithubData();
+            let html = '';
+            content.forEach((s) => {
+                html += `<div class="salon">
+                    <p><b>${s.name}</b> (${s.phone})</p>
+                    <p>الكود: <mark>${s.code}</mark> | الحالة: ${s.active ? 'نشط ✅' : 'معطل ❌'}</p>
+                </div>`;
+            });
+            document.getElementById('salonsList').innerHTML = html || 'لا يوجد صالونات بعد';
+        }
+        loadSalons();
+    </script>
+</body>
+</html>
