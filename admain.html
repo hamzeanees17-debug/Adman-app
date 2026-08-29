@@ -1,88 +1,306 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>إدارة الصالونات</title>
-    <style>
-        body { font-family: system-ui, sans-serif; background: #0f172a; color: #fff; padding: 15px; margin: 0; text-align: center; }
-        .card { background: #1e293b; padding: 15px; border-radius: 12px; margin-bottom: 15px; border: 1px solid #334155; }
-        input, button { padding: 12px; margin: 5px 0; width: 90%; border-radius: 8px; border: none; font-size: 15px; }
-        button { background: #22c55e; color: #fff; font-weight: bold; cursor: pointer; }
-        .salon { border-bottom: 1px solid #334155; padding: 10px 0; text-align: right; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام إدارة الصالونات | Hamza Qashtam</title>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0b0f19;
+      --panel-bg: #111827;
+      --card-bg: #1f2937;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #10b981;
+      --text-main: #f9fafb;
+      --text-muted: #9ca3af;
+      --border: #374151;
+    }
+
+    * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding-bottom: 40px; }
+
+    /* Top Navigation Bar */
+    .navbar {
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-title { font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .developer-badge { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
+
+    .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
+
+    /* Action Section */
+    .action-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .section-title { font-size: 20px; font-weight: 700; color: #f3f4f6; }
+
+    .btn-add {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .btn-add:active { transform: scale(0.97); }
+
+    /* Salon List View */
+    .salon-list { display: flex; flex-direction: column; gap: 12px; }
+
+    .salon-item {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .salon-top { display: flex; justify-content: space-between; align-items: center; }
+    .salon-info h3 { font-size: 16px; font-weight: 700; color: #fff; }
+    .salon-info span { font-size: 13px; color: var(--text-muted); }
+
+    .code-box {
+      background: var(--card-bg);
+      border: 1px dashed var(--accent);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .code-value { font-family: monospace; font-size: 16px; font-weight: 700; color: var(--accent); letter-spacing: 1.5px; }
+
+    .btn-copy {
+      background: rgba(255, 255, 255, 0.05);
+      color: #d1d5db;
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    /* Modal Form Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      padding: 16px;
+      z-index: 1000;
+    }
+
+    .modal-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 420px;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .close-btn { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
+    .form-control {
+      width: 100%;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .form-control:focus { border-color: var(--primary); }
+
+    .btn-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .empty-msg { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
+  </style>
 </head>
 <body>
-    <h2>لوحة تحكم الإدارة 💈</h2>
-    <div class="card">
-        <h3>إضافة صالون جديد</h3>
-        <input type="text" id="name" placeholder="اسم الصالون">
-        <input type="text" id="phone" placeholder="رقم الهاتف">
-        <button onclick="addSalon()">توليد الكود والتفعيل</button>
+
+  <!-- Top Bar -->
+  <div class="navbar">
+    <div class="brand-title">لوحة التحكّم 💈</div>
+    <div class="developer-badge">Dev: Hamza Qashtam</div>
+  </div>
+
+  <div class="container">
+    <!-- List Header -->
+    <div class="action-header">
+      <div class="section-title">الصالونات المسجلة</div>
+      <button class="btn-add" id="openModalBtn">➕ إضافة صالون جديد</button>
     </div>
-    <div class="card">
-        <h3>الصالونات المسجلة</h3>
-        <div id="salonsList">جاري تحميل البيانات...</div>
+
+    <!-- Salon List Container -->
+    <div class="salon-list" id="salonListContainer">
+      <div class="empty-msg">جاري تحميل البيانات...</div>
     </div>
+  </div>
 
-    <script>
-        const GITHUB_TOKEN = "ضع_GITHUB_PERSONAL_ACCESS_TOKEN_هنا";
-        const REPO_OWNER = "اسم_حسابك_على_GITHUB";
-        const REPO_NAME = "اسم_المستودع";
-        const FILE_PATH = "data.json";
+  <!-- Modal Window for Adding Salon -->
+  <div class="modal-overlay" id="addModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">تسجيل صالون جديد</div>
+        <button class="close-btn" id="closeModalBtn">&times;</button>
+      </div>
 
-        async function getGithubData() {
-            try {
-                let res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
-                    headers: { "Authorization": `token ${GITHUB_TOKEN}` }
-                });
-                let data = await res.json();
-                let content = JSON.parse(atob(data.content));
-                return { content, sha: data.sha };
-            } catch(e) { return { content: [], sha: "" }; }
+      <div class="form-group">
+        <label>اسم الصالون</label>
+        <input type="text" id="salonName" class="form-control" placeholder="أدخل اسم الصالون">
+      </div>
+
+      <div class="form-group">
+        <label>رقم الهاتف</label>
+        <input type="tel" id="salonPhone" class="form-control" placeholder="أدخل رقم الهاتف">
+      </div>
+
+      <button type="button" class="btn-submit" id="saveSalonBtn">توليد كود التفعيل 🔑</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const modal = document.getElementById('addModal');
+      const openModalBtn = document.getElementById('openModalBtn');
+      const closeModalBtn = document.getElementById('closeModalBtn');
+      const saveSalonBtn = document.getElementById('saveSalonBtn');
+      const container = document.getElementById('salonListContainer');
+
+      const nameInput = document.getElementById('salonName');
+      const phoneInput = document.getElementById('salonPhone');
+
+      function getStorageData() {
+        try {
+          return JSON.parse(localStorage.getItem('salon_app_db')) || [];
+        } catch(e) {
+          return [];
+        }
+      }
+
+      function setStorageData(data) {
+        localStorage.setItem('salon_app_db', JSON.stringify(data));
+      }
+
+      function generateUniqueCode() {
+        return Math.floor(100000 + Math.random() * 900000).toString();
+      }
+
+      function renderSalonList() {
+        const items = getStorageData();
+        if (items.length === 0) {
+          container.innerHTML = '<div class="empty-msg">لا يوجد صالونات مسجلة حالياً، اضغط على "إضافة صالون جديد" للبدء.</div>';
+          return;
         }
 
-        async function saveGithubData(newContent, sha) {
-            await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${FILE_PATH}`, {
-                method: "PUT",
-                headers: {
-                    "Authorization": `token ${GITHUB_TOKEN}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    message: "تحديث البيانات من الإدارة",
-                    content: btoa(unescape(encodeURIComponent(JSON.stringify(newContent, null, 2)))),
-                    sha: sha
-                })
-            });
-            loadSalons();
+        container.innerHTML = items.map(item => `
+          <div class="salon-item">
+            <div class="salon-top">
+              <div class="salon-info">
+                <h3>${item.name}</h3>
+                <span>📱 ${item.phone}</span>
+              </div>
+            </div>
+            <div class="code-box">
+              <span class="code-value">🔑 ${item.code}</span>
+              <button class="btn-copy" onclick="copyCode('${item.code}')">نسخ الكود</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // Open/Close Modal
+      openModalBtn.addEventListener('click', () => modal.style.display = 'flex');
+      closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
+
+      // Submit Salon Form
+      saveSalonBtn.addEventListener('click', function() {
+        const name = nameInput.value.trim();
+        const phone = phoneInput.value.trim();
+
+        if (!name || !phone) {
+          alert('يرجى تعبئة كافة البيانات المطلوب!');
+          return;
         }
 
-        async function addSalon() {
-            let name = document.getElementById('name').value;
-            let phone = document.getElementById('phone').value;
-            if(!name || !phone) return alert('يرجى تعبئة كامل الحقول');
+        const list = getStorageData();
+        const code = generateUniqueCode();
 
-            let code = 'BARBER-' + Math.floor(1000 + Math.random() * 9000);
-            let { content, sha } = await getGithubData();
+        list.unshift({
+          id: Date.now(),
+          name: name,
+          phone: phone,
+          code: code
+        });
 
-            content.push({ code, name, phone, active: true, currentNum: 0, queue: [] });
-            await saveGithubData(content, sha);
-            alert('تم إنشاء الكود: ' + code);
+        setStorageData(list);
+
+        nameInput.value = '';
+        phoneInput.value = '';
+        modal.style.display = 'none';
+
+        renderSalonList();
+        alert('تم إضافة الصالون بنجاح!\nكود التفعيل: ' + code);
+      });
+
+      window.copyCode = function(code) {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(code);
+          alert('تم نسخ الكود: ' + code);
+        } else {
+          alert('الكود: ' + code);
         }
+      };
 
-        async function loadSalons() {
-            let { content } = await getGithubData();
-            let html = '';
-            content.forEach((s) => {
-                html += `<div class="salon">
-                    <p><b>${s.name}</b> (${s.phone})</p>
-                    <p>الكود: <mark>${s.code}</mark> | الحالة: ${s.active ? 'نشط ✅' : 'معطل ❌'}</p>
-                </div>`;
-            });
-            document.getElementById('salonsList').innerHTML = html || 'لا يوجد صالونات بعد';
-        }
-        loadSalons();
-    </script>
+      renderSalonList();
+    });
+  </script>
 </body>
 </html>
