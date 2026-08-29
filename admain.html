@@ -3,304 +3,104 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام إدارة الصالونات | Hamza Qashtam</title>
+  <title>لوحة التحكم الفائقة | Hamza Qashtam</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
-    :root {
-      --bg-main: #0b0f19;
-      --panel-bg: #111827;
-      --card-bg: #1f2937;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --accent: #10b981;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --border: #374151;
-    }
-
-    * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-    body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding-bottom: 40px; }
-
-    /* Top Navigation Bar */
-    .navbar {
-      background: var(--panel-bg);
-      border-bottom: 1px solid var(--border);
-      padding: 16px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-
-    .brand-title { font-size: 18px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .developer-badge { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); font-size: 12px; padding: 4px 10px; border-radius: 20px; font-weight: 600; }
-
-    .container { max-width: 600px; margin: 20px auto; padding: 0 16px; }
-
-    /* Action Section */
-    .action-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .section-title { font-size: 20px; font-weight: 700; color: #f3f4f6; }
-
-    .btn-add {
-      background: var(--primary);
-      color: white;
-      border: none;
-      padding: 10px 18px;
-      border-radius: 10px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-
-    .btn-add:active { transform: scale(0.97); }
-
-    /* Salon List View */
-    .salon-list { display: flex; flex-direction: column; gap: 12px; }
-
-    .salon-item {
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .salon-top { display: flex; justify-content: space-between; align-items: center; }
-    .salon-info h3 { font-size: 16px; font-weight: 700; color: #fff; }
-    .salon-info span { font-size: 13px; color: var(--text-muted); }
-
-    .code-box {
-      background: var(--card-bg);
-      border: 1px dashed var(--accent);
-      border-radius: 8px;
-      padding: 8px 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .code-value { font-family: monospace; font-size: 16px; font-weight: 700; color: var(--accent); letter-spacing: 1.5px; }
-
-    .btn-copy {
-      background: rgba(255, 255, 255, 0.05);
-      color: #d1d5db;
-      border: 1px solid var(--border);
-      padding: 5px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    /* Modal Form Overlay */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(4px);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      padding: 16px;
-      z-index: 1000;
-    }
-
-    .modal-card {
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      width: 100%;
-      max-width: 420px;
-      border-radius: 16px;
-      padding: 24px;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .modal-title { font-size: 18px; font-weight: 700; }
-    .close-btn { background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
-
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 13px; color: var(--text-muted); margin-bottom: 6px; }
-    .form-control {
-      width: 100%;
-      background: var(--bg-main);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 14px;
-      color: #fff;
-      font-size: 14px;
-      outline: none;
-    }
-
-    .form-control:focus { border-color: var(--primary); }
-
-    .btn-submit {
-      width: 100%;
-      background: var(--accent);
-      color: #000;
-      border: none;
-      padding: 14px;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-
-    .empty-msg { text-align: center; color: var(--text-muted); padding: 40px 0; font-size: 14px; }
+    :root { --bg: #0b0f19; --card: #111827; --primary: #3b82f6; --accent: #10b981; --danger: #ef4444; --text: #f9fafb; --border: #374151; }
+    * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); padding: 20px 15px; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 15px; }
+    .btn { background: var(--primary); color: #fff; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-danger { background: var(--danger); }
+    .btn-accent { background: var(--accent); color: #000; }
+    input { width: 100%; padding: 10px; margin: 8px 0; background: #1f2937; border: 1px solid var(--border); color: #fff; border-radius: 8px; outline: none; }
+    .salon-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding: 12px 0; }
+    .receipt-img { max-width: 100%; border-radius: 8px; margin-top: 10px; display: none; }
   </style>
 </head>
 <body>
-
-  <!-- Top Bar -->
-  <div class="navbar">
-    <div class="brand-title">لوحة التحكّم 💈</div>
-    <div class="developer-badge">Dev: Hamza Qashtam</div>
+  <div class="header">
+    <h2>لوحة تحكم الصالونات 💈</h2>
+    <span style="color: var(--primary); font-weight: bold;">Dev: Hamza Qashtam</span>
   </div>
 
-  <div class="container">
-    <!-- List Header -->
-    <div class="action-header">
-      <div class="section-title">الصالونات المسجلة</div>
-      <button class="btn-add" id="openModalBtn">➕ إضافة صالون جديد</button>
-    </div>
-
-    <!-- Salon List Container -->
-    <div class="salon-list" id="salonListContainer">
-      <div class="empty-msg">جاري تحميل البيانات...</div>
-    </div>
+  <div class="card">
+    <h3>إضافة صالون وتوليد كود اشتراك</h3>
+    <input type="text" id="salonName" placeholder="اسم الصالون">
+    <input type="tel" id="salonPhone" placeholder="رقم الهاتف">
+    <button class="btn" id="createSalonBtn">توليد الكود والتفعيل</button>
   </div>
 
-  <!-- Modal Window for Adding Salon -->
-  <div class="modal-overlay" id="addModal">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="modal-title">تسجيل صالون جديد</div>
-        <button class="close-btn" id="closeModalBtn">&times;</button>
-      </div>
-
-      <div class="form-group">
-        <label>اسم الصالون</label>
-        <input type="text" id="salonName" class="form-control" placeholder="أدخل اسم الصالون">
-      </div>
-
-      <div class="form-group">
-        <label>رقم الهاتف</label>
-        <input type="tel" id="salonPhone" class="form-control" placeholder="أدخل رقم الهاتف">
-      </div>
-
-      <button type="button" class="btn-submit" id="saveSalonBtn">توليد كود التفعيل 🔑</button>
-    </div>
+  <div class="card">
+    <h3>قائمة الصالونات والاشتراكات</h3>
+    <div id="salonsList">جاري التحميل...</div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const modal = document.getElementById('addModal');
-      const openModalBtn = document.getElementById('openModalBtn');
-      const closeModalBtn = document.getElementById('closeModalBtn');
-      const saveSalonBtn = document.getElementById('saveSalonBtn');
-      const container = document.getElementById('salonListContainer');
+    // تهيئة Firebase سحابي مدمج للتزامن المباشر
+    const firebaseConfig = { databaseURL: "https://salon-system-hq-default-rtdb.firebaseio.com/" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-      const nameInput = document.getElementById('salonName');
-      const phoneInput = document.getElementById('salonPhone');
+    const nameIn = document.getElementById('salonName');
+    const phoneIn = document.getElementById('salonPhone');
+    const salonsList = document.getElementById('salonsList');
 
-      function getStorageData() {
-        try {
-          return JSON.parse(localStorage.getItem('salon_app_db')) || [];
-        } catch(e) {
-          return [];
-        }
-      }
+    document.getElementById('createSalonBtn').addEventListener('click', () => {
+      const name = nameIn.value.trim();
+      const phone = phoneIn.value.trim();
+      if (!name || !phone) return alert('أدخل كافة البيانات');
 
-      function setStorageData(data) {
-        localStorage.setItem('salon_app_db', JSON.stringify(data));
-      }
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiryDate = new Date();
+      expiryDate.setDate(expiryDate.getDate() + 30); // اشتراك 30 يوم مبدئياً
 
-      function generateUniqueCode() {
-        return Math.floor(100000 + Math.random() * 900000).toString();
-      }
-
-      function renderSalonList() {
-        const items = getStorageData();
-        if (items.length === 0) {
-          container.innerHTML = '<div class="empty-msg">لا يوجد صالونات مسجلة حالياً، اضغط على "إضافة صالون جديد" للبدء.</div>';
-          return;
-        }
-
-        container.innerHTML = items.map(item => `
-          <div class="salon-item">
-            <div class="salon-top">
-              <div class="salon-info">
-                <h3>${item.name}</h3>
-                <span>📱 ${item.phone}</span>
-              </div>
-            </div>
-            <div class="code-box">
-              <span class="code-value">🔑 ${item.code}</span>
-              <button class="btn-copy" onclick="copyCode('${item.code}')">نسخ الكود</button>
-            </div>
-          </div>
-        `).join('');
-      }
-
-      // Open/Close Modal
-      openModalBtn.addEventListener('click', () => modal.style.display = 'flex');
-      closeModalBtn.addEventListener('click', () => modal.style.display = 'none');
-
-      // Submit Salon Form
-      saveSalonBtn.addEventListener('click', function() {
-        const name = nameInput.value.trim();
-        const phone = phoneInput.value.trim();
-
-        if (!name || !phone) {
-          alert('يرجى تعبئة كافة البيانات المطلوب!');
-          return;
-        }
-
-        const list = getStorageData();
-        const code = generateUniqueCode();
-
-        list.unshift({
-          id: Date.now(),
-          name: name,
-          phone: phone,
-          code: code
-        });
-
-        setStorageData(list);
-
-        nameInput.value = '';
-        phoneInput.value = '';
-        modal.style.display = 'none';
-
-        renderSalonList();
-        alert('تم إضافة الصالون بنجاح!\nكود التفعيل: ' + code);
+      db.ref('salons/' + code).set({
+        info: { name, phone, code, active: true, expiry: expiryDate.toISOString(), used: false },
+        settings: { themeColor: '#3b82f6', bgUrl: '', headerUrl: '', chairs: 1 }
+      }).then(() => {
+        alert('تم توليد كود التفعيل: ' + code);
+        nameIn.value = ''; phoneIn.value = '';
       });
-
-      window.copyCode = function(code) {
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(code);
-          alert('تم نسخ الكود: ' + code);
-        } else {
-          alert('الكود: ' + code);
-        }
-      };
-
-      renderSalonList();
     });
+
+    db.ref('salons').on('value', snapshot => {
+      const data = snapshot.val();
+      if (!data) return salonsList.innerHTML = 'لا يوجد صالونات بعد';
+
+      salonsList.innerHTML = '';
+      Object.keys(data).forEach(code => {
+        const item = data[code].info;
+        const daysLeft = Math.ceil((new Date(item.expiry) - new Date()) / (1000 * 60 * 60 * 24));
+        
+        const div = document.createElement('div');
+        div.className = 'salon-box';
+        div.innerHTML = `
+          <div>
+            <strong>${item.name} (${item.phone})</strong><br>
+            <small style="color: #9ca3af">كود: ${code} | الأيام المتبقية: ${daysLeft > 0 ? daysLeft : 0}</small>
+            ${item.receipt ? `<br><a href="${item.receipt}" target="_blank" style="color:#60a5fa">عرض وصل التحويل</a>` : ''}
+          </div>
+          <div>
+            <button class="btn ${item.active ? 'btn-danger' : 'btn-accent'}" onclick="toggleStatus('${code}', ${item.active})">
+              ${item.active ? 'تعطيل' : 'تفعيل'}
+            </button>
+            <button class="btn" onclick="renewSubscription('${code}')">تجديد +30 يوم</button>
+          </div>
+        `;
+        salonsList.appendChild(div);
+      });
+    });
+
+    window.toggleStatus = (code, current) => db.ref(`salons/${code}/info/active`).set(!current);
+    window.renewSubscription = (code) => {
+      const newExp = new Date();
+      newExp.setDate(newExp.getDate() + 30);
+      db.ref(`salons/${code}/info`).update({ expiry: newExp.toISOString(), active: true, receipt: null });
+    };
   </script>
 </body>
 </html>
