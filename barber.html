@@ -5,127 +5,179 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة الحلاق | Hamza Qashtam</title>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <style>
-    :root {
-      --bg-main: #0b0f19;
-      --panel-bg: #111827;
-      --card-bg: #1f2937;
-      --primary: #3b82f6;
-      --accent: #10b981;
-      --danger: #ef4444;
-      --text-main: #f9fafb;
-      --text-muted: #9ca3af;
-      --border: #374151;
-    }
+    :root { --bg: #0b0f19; --card: #111827; --primary: #3b82f6; --accent: #10b981; --text: #f9fafb; --border: #374151; }
     * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; margin: 0; padding: 0; }
-    body { background-color: var(--bg-main); color: var(--text-main); min-height: 100vh; padding: 20px 16px; }
-    .container { max-width: 500px; margin: 0 auto; }
-    .card { background: var(--panel-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 20px; text-align: center; }
-    .form-control { width: 100%; background: var(--bg-main); border: 1px solid var(--border); border-radius: 10px; padding: 12px; color: #fff; font-size: 16px; margin: 10px 0; text-align: center; outline: none; }
-    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 14px; border-radius: 10px; font-weight: 700; font-size: 16px; cursor: pointer; }
-    .queue-item { background: var(--card-bg); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border); }
-    .btn-done { background: var(--accent); color: #000; border: none; padding: 8px 14px; border-radius: 8px; font-weight: 700; cursor: pointer; }
-    .hidden { display: none; }
+    body { background: var(--bg); color: var(--text); padding: 15px; }
+    .hidden { display: none !important; }
+    .card { background: var(--card); border-radius: 14px; padding: 16px; margin-bottom: 15px; border: 1px solid var(--border); }
+    .input { width: 100%; padding: 12px; margin: 6px 0; background: #1f2937; border: 1px solid var(--border); color: #fff; border-radius: 8px; }
+    .btn { width: 100%; background: var(--primary); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .menu-bar { display: flex; justify-content: space-between; align-items: center; }
+    .drawer { background: #1f2937; padding: 15px; border-radius: 10px; margin-bottom: 15px; }
+    .sub-alert { background: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #fca5a5; padding: 10px; border-radius: 8px; margin-bottom: 12px; text-align: center; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- تسجيل الدخول بالحساب -->
-    <div id="loginSection" class="card">
-      <h2>تسجيل دخول الحلاق 💈</h2>
-      <p style="color: var(--text-muted); font-size: 14px; margin-top: 5px;">أدخل كود التفعيل الخاص بالصالون</p>
-      <input type="text" id="salonCodeInput" class="form-control" placeholder="أدخل الكود (مثال: 123456)">
-      <button class="btn" id="loginBtn">دخول لوحة التحكّم</button>
+  <div id="loginSec" class="card">
+    <h2>تسجيل دخول الحلاق 💈</h2>
+    <input type="text" id="codeIn" class="input" placeholder="أدخل كود الإدارة">
+    <button class="btn" id="loginBtn">تفعيل الدخول</button>
+  </div>
+
+  <div id="appSec" class="hidden">
+    <div id="subAlert" class="sub-alert hidden"></div>
+
+    <div class="menu-bar card">
+      <h3 id="salonHeaderTitle">الصالون</h3>
+      <button class="btn" style="width:auto;" onclick="toggleDrawer()">☰ القائمة</button>
     </div>
 
-    <!-- لوحة إدارة الأدوار -->
-    <div id="dashboardSection" class="hidden">
-      <div class="card">
-        <h2 id="salonTitle">صالون الحلاقة</h2>
-        <p style="color: var(--accent); font-weight: bold; margin-top: 5px;" id="queueCount">عدد المنتظرين: 0</p>
-      </div>
+    <!-- القائمة الخفية (كشف الحساب والتقرير) -->
+    <div id="drawer" class="drawer hidden">
+      <h4>📊 كشف الحساب والتقرير</h4>
+      <p id="statDone">الذين حُلق لهم: 0</p>
+      <p id="statCancel">الأدوار الملغاة: 0</p>
+      <p id="statIncome">مجموع الدخل: 0 JOD</p>
+      <hr style="margin:10px 0; border-color:var(--border);">
+      <h4>💳 تجديد الاشتراك (CliQ)</h4>
+      <p style="font-size:12px; color:#9ca3af">حول للبنك الإسلامي باسم: <strong>HAMZAQASHT</strong></p>
+      <input type="text" id="receiptUrl" class="input" placeholder="رابط لقطة الشاشة / الإيصال">
+      <button class="btn" style="background:var(--accent); color:#000;" onclick="sendReceipt()">إرسال للإدارة للتجديد</button>
+    </div>
 
-      <div class="card">
-        <h3 style="margin-bottom: 15px; font-size: 18px;">قائمة الدور الحالية</h3>
-        <div id="customerQueue">
-          <p style="color: var(--text-muted);">لا يوجد زبائن في الانتظار حالياً</p>
-        </div>
-      </div>
+    <!-- إعدادات الشكل والواجهة -->
+    <div class="card">
+      <h4>🎨 تخصيص الهوية والبث الزبائني</h4>
+      <input type="text" id="bgInput" class="input" placeholder="رابط صورة الخلفية العامة">
+      <input type="text" id="headerInput" class="input" placeholder="رابط صورة غلاف الصالون">
+      <button class="btn" onclick="saveVisuals()">حفظ الهوية</button>
+    </div>
+
+    <!-- إضافة خدمات وقيم زمنية -->
+    <div class="card">
+      <h4>✂️ إضافة خدمة ووقتها (1-45 دقيقة)</h4>
+      <input type="text" id="srvName" class="input" placeholder="اسم الخدمة (مثال: حلاقة كاملة)">
+      <input type="number" id="srvPrice" class="input" placeholder="السعر">
+      <input type="number" id="srvTime" class="input" placeholder="المدة بالدقائق (1 - 45)" min="1" max="45">
+      <button class="btn" onclick="addService()">إضافة الخدمة</button>
+    </div>
+
+    <!-- الدور الحالي -->
+    <div class="card">
+      <h4>📋 قائمة الانتظار الحالية</h4>
+      <div id="queueList">لا يوجد زبائن حالياً</div>
     </div>
   </div>
 
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      const loginBtn = document.getElementById('loginBtn');
-      const codeInput = document.getElementById('salonCodeInput');
-      const loginSection = document.getElementById('loginSection');
-      const dashboardSection = document.getElementById('dashboardSection');
-      const salonTitle = document.getElementById('salonTitle');
-      const customerQueue = document.getElementById('customerQueue');
-      const queueCount = document.getElementById('queueCount');
+    const firebaseConfig = { databaseURL: "https://salon-system-hq-default-rtdb.firebaseio.com/" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
 
-      let currentSalon = null;
+    let myCode = localStorage.getItem('barber_code');
+    if (myCode) initBarber(myCode);
 
-      function getSalons() {
-        return JSON.parse(localStorage.getItem('salon_app_db')) || [];
-      }
-
-      function getQueue(code) {
-        return JSON.parse(localStorage.getItem('queue_' + code)) || [];
-      }
-
-      function saveQueue(code, queue) {
-        localStorage.setItem('queue_' + code, JSON.stringify(queue));
-      }
-
-      function renderQueue() {
-        if (!currentSalon) return;
-        const queue = getQueue(currentSalon.code);
-        queueCount.innerText = `عدد المنتظرين: ${queue.length}`;
-
-        if (queue.length === 0) {
-          customerQueue.innerHTML = '<p style="color: var(--text-muted);">لا يوجد زبائن في الانتظار حالياً</p>';
-          return;
-        }
-
-        customerQueue.innerHTML = queue.map((c, index) => `
-          <div class="queue-item">
-            <div>
-              <strong>#${index + 1} - ${c.name}</strong>
-              <div style="font-size: 12px; color: var(--text-muted);">📞 ${c.phone}</div>
-            </div>
-            <button class="btn-done" onclick="finishCustomer(${index})">إنهاء الدور ✅</button>
-          </div>
-        `).join('');
-      }
-
-      loginBtn.addEventListener('click', function() {
-        const code = codeInput.value.trim();
-        const salons = getSalons();
-        const found = salons.find(s => s.code === code);
-
-        if (!found) {
-          alert('كود التفعيل غير صحيح! تأكد من الكود المولد في صفحة الأدمن.');
-          return;
-        }
-
-        currentSalon = found;
-        salonTitle.innerText = found.name;
-        loginSection.classList.add('hidden');
-        dashboardSection.classList.remove('hidden');
-        renderQueue();
-
-        // تحديث تلقائي كل 3 ثوانٍ
-        setInterval(renderQueue, 3000);
+    document.getElementById('loginBtn').addEventListener('click', () => {
+      const c = document.getElementById('codeIn').value.trim();
+      db.ref('salons/' + c).once('value', snap => {
+        if (!snap.exists()) return alert('الكود غير صحيح');
+        localStorage.setItem('barber_code', c);
+        initBarber(c);
       });
-
-      window.finishCustomer = function(index) {
-        let queue = getQueue(currentSalon.code);
-        queue.splice(index, 1);
-        saveQueue(currentSalon.code, queue);
-        renderQueue();
-      };
     });
+
+    function initBarber(code) {
+      myCode = code;
+      document.getElementById('loginSec').classList.add('hidden');
+      document.getElementById('appSec').classList.remove('hidden');
+
+      db.ref(`salons/${code}`).on('value', snap => {
+        const val = snap.val();
+        if(!val.info.active) return alert('تم تعطيل الخدمة من الإدارة! تواصل مع حمزة قشطام');
+
+        document.getElementById('salonHeaderTitle').innerText = val.info.name;
+        
+        // التنبيه التنازلي للاشتراك
+        const daysLeft = Math.ceil((new Date(val.info.expiry) - new Date()) / (1000 * 60 * 60 * 24));
+        const alertBox = document.getElementById('subAlert');
+        if (daysLeft <= 10) {
+          alertBox.classList.remove('hidden');
+          alertBox.innerText = `متبقي على نهاية الاشتراك ${daysLeft} أيام! يرجى التجديد.`;
+        } else { alertBox.classList.add('hidden'); }
+
+        // عرض الزبائن والدور
+        renderQueue(val.queue || {});
+        renderStats(val.stats || {});
+      });
+    }
+
+    function renderQueue(q) {
+      const container = document.getElementById('queueList');
+      container.innerHTML = '';
+      const keys = Object.keys(q);
+      if (keys.length === 0) return container.innerHTML = 'لا يوجد زبائن حالياً';
+
+      keys.forEach(k => {
+        const item = q[k];
+        const div = document.createElement('div');
+        div.style = "display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;";
+        div.innerHTML = `
+          <div><strong>#${item.number} - ${item.name}</strong> (${item.service})</div>
+          <div>
+            <button class="btn" style="width:auto; background:var(--accent); color:#000;" onclick="actionQueue('${k}', 'done', ${item.price})">تم</button>
+            <button class="btn" style="width:auto; background:#ef4444;" onclick="actionQueue('${k}', 'cancel')">إلغاء</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function renderStats(s) {
+      document.getElementById('statDone').innerText = 'الذين حُلق لهم: ' + (s.doneCount || 0);
+      document.getElementById('statCancel').innerText = 'الأدوار الملغاة: ' + (s.cancelCount || 0);
+      document.getElementById('statIncome').innerText = 'مجموع الدخل: ' + (s.income || 0) + ' JOD';
+    }
+
+    window.toggleDrawer = () => document.getElementById('drawer').classList.toggle('hidden');
+    window.saveVisuals = () => {
+      db.ref(`salons/${myCode}/settings`).update({
+        bgUrl: document.getElementById('bgInput').value,
+        headerUrl: document.getElementById('headerInput').value
+      });
+      alert('تم حفظ الهوية البصرية');
+    };
+
+    window.addService = () => {
+      const name = document.getElementById('srvName').value;
+      const price = document.getElementById('srvPrice').value;
+      const time = document.getElementById('srvTime').value;
+      db.ref(`salons/${myCode}/services`).push({ name, price, time });
+      alert('تم إضافة الخدمة');
+    };
+
+    window.actionQueue = (key, type, price = 0) => {
+      db.ref(`salons/${myCode}/queue/${key}`).remove();
+      const statRef = db.ref(`salons/${myCode}/stats`);
+      statRef.transaction(curr => {
+        curr = curr || { doneCount: 0, cancelCount: 0, income: 0, totalCounter: 0 };
+        if (type === 'done') {
+          curr.doneCount++;
+          curr.income += parseInt(price);
+        } else {
+          curr.cancelCount++;
+        }
+        return curr;
+      });
+    };
+
+    window.sendReceipt = () => {
+      const url = document.getElementById('receiptUrl').value;
+      db.ref(`salons/${myCode}/info`).update({ receipt: url });
+      alert('تم إرسال لقطة الشاشة، سيتم مراجعة وتجديد الاشتراك في أقل من 24 ساعة!');
+    };
   </script>
 </body>
 </html>
