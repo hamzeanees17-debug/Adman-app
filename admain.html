@@ -30,7 +30,7 @@
     <div class="card">
       <h2>إضافة صالون جديد</h2>
       <div class="form-group"><input type="text" id="salonName" placeholder="اسم الصالون (مثال: صالون يسر)"></div>
-      <div class="form-group"><input type="tel" id="salonPhone" placeholder="رقم الهاتف (مثال: 0788457518)"></div>
+      <div class="form-group"><input type="tel" id="salonPhone" maxlength="10" placeholder="رقم الهاتف (10 أرقام)"></div>
       <button class="btn" id="saveBtn" onclick="generateSalonCode()">توليد الكود والحفظ أونلاين</button>
     </div>
 
@@ -50,11 +50,11 @@
     function getToken() { return (part1 + part2).trim(); }
 
     async function getDB() {
-      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?r=${Math.random()}`, {
+      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?t=${Date.now()}`, {
         headers: { Authorization: `token ${getToken()}` },
         cache: 'no-store'
       });
-      if(!res.ok) throw new Error('تعذر الوصول إلى قاعدة البيانات online');
+      if(!res.ok) throw new Error('تعذر جلب ملف data.json من GitHub');
       const data = await res.json();
       
       const binaryStr = atob(data.content.replace(/\s/g, ''));
@@ -77,19 +77,16 @@
           'Content-Type': 'application/json' 
         },
         body: JSON.stringify({ 
-          message: "Add verified salon", 
+          message: "Update verified salons data", 
           content: encodedContent, 
           sha: sha 
         })
       });
       
-      // التثبت الحقيقي من النجاح أونلاين
       if(!res.ok) {
         const err = await res.json();
-        throw new Error(err.message || 'فشل عملية التخزين في السيرفر');
+        throw new Error(err.message || 'فشل الحفظ أونلاين');
       }
-
-      return true;
     }
 
     function renderSalons(salons) {
@@ -121,33 +118,49 @@
       const name = nameInput.value.trim();
       const phone = phoneInput.value.trim();
 
-      if (!name || !phone) return alert('يرجى إدخال اسم الصالون ورقم الهاتف أولاً');
+      // 1. التحقق من المدخلات (اسم ورقم هاتف مكون من 10 أرقام بالضبط)
+      if (!name) return alert('يرجى إدخال اسم الصالون');
+      const phoneRegex = /^07\d{8}$/;
+      if (!phoneRegex.test(phone)) {
+        return alert('رقم الهاتف غير صحيح! يجب أن يتكون من 10 أرقام ويبدأ بـ 07 (مثال: 0788457518)');
+      }
 
       try {
         btn.disabled = true;
-        btn.innerText = "جاري التحقق والحفظ أونلاين...";
+        btn.innerText = "جاري الحفظ أونلاين...";
 
-        // 1. جلب البيانات والأشياء المحفوظة حالياً
+        // 2. جلب آخر نسخة من قاعدة البيانات أونلاين
         const db = await getDB();
         if(!db.content.salons) db.content.salons = {};
-        
-        // 2. تجهيز كود الصالون
+
+        // 3. التحقق من التكرار عبر رقم الهاتف
+        const existingCode = Object.keys(db.content.salons).find(
+          k => db.content.salons[k].phone === phone
+        );
+
+        if (existingCode) {
+          btn.disabled = false;
+          btn.innerText = "توليد الكود والحفظ أونلاين";
+          alert(`هذا الصالون مسجل مسبقاً برقم الهاتف هذا!\nالكود الخاص به هو: ${existingCode}`);
+          renderSalons(db.content.salons);
+          return;
+        }
+
+        // 4. توليد كود جديد وإضافته للبيانات الحالية
         const code = 'SALON-' + Math.floor(100000 + Math.random() * 900000);
         db.content.salons[code] = { name, phone, code, queue: [] };
         
-        // 3. محاولة الحفظ الفعلية في GitHub
+        // 5. حفظ البيانات أونلاين
         await saveDB(db.content, db.sha);
         
-        // 4. لا يتم إظهار الكود ولا تنظيف الخانات إلا بعد نجاح الـ Save تماماً
         nameInput.value = '';
         phoneInput.value = '';
         
         renderSalons(db.content.salons);
-        alert(`تم التسجيل والحفظ أونلاين بنجاح!\nكود الصالون المعتمد: ${code}`);
+        alert(`تم الحفظ أونلاين بنجاح!\nكود الصالون: ${code}`);
 
       } catch(e) { 
-        // في حال وجود أي مشكلة أونلاين لن يعطيك الكود أبداً وسيطبع الخطأ
-        alert("لم يتم التسجيل! خطأ: " + e.message); 
+        alert("خطأ أثناء الحفظ: " + e.message); 
       } finally {
         btn.disabled = false;
         btn.innerText = "توليد الكود والحفظ أونلاين";
