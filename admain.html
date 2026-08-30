@@ -30,7 +30,7 @@
       <h2>إضافة صالون جديد</h2>
       <div class="form-group"><input type="text" id="salonName" placeholder="اسم الصالون (مثال: صالون يسر)"></div>
       <div class="form-group"><input type="tel" id="salonPhone" placeholder="رقم الهاتف (مثال: 0788457518)"></div>
-      <button class="btn" onclick="generateSalonCode()">توليد الكود والحفظ أونلاين</button>
+      <button class="btn" id="saveBtn" onclick="generateSalonCode()">توليد الكود والحفظ أونلاين</button>
     </div>
 
     <div class="card">
@@ -43,18 +43,17 @@
     const REPO_OWNER = 'hamzeanees17-debug';
     const REPO_NAME = 'Adman-app';
     
-    const part1 = "ghp_ahcSfdWLBF"; 
+    const part1 = ""ghp_ahcSfdWLBF"; 
     const part2 = "wjlAl4GEp2ybf1HsDBsE2qZZfI"; 
 
-    function getToken() {
-      return part1 + part2;
-    }
+    function getToken() { return part1 + part2; }
 
     async function getDB() {
-      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?cacheBust=${Date.now()}`, {
-        headers: { Authorization: `token ${getToken()}` }
+      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?timestamp=${Date.now()}`, {
+        headers: { Authorization: `token ${getToken()}` },
+        cache: 'no-store'
       });
-      if(!res.ok) throw new Error('تعذر الوصول لملف data.json، تحقق من المفتاح');
+      if(!res.ok) throw new Error('تعذر جلب ملف data.json');
       const data = await res.json();
       
       const binaryStr = atob(data.content.replace(/\s/g, ''));
@@ -66,36 +65,60 @@
 
     async function saveDB(content, sha) {
       const jsonString = JSON.stringify(content, null, 2);
-      
       const bytes = new TextEncoder().encode(jsonString);
       const binaryStr = Array.from(bytes, b => String.fromCharCode(b)).join('');
       const encodedContent = btoa(binaryStr);
 
       const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
         method: 'PUT',
-        headers: { Authorization: `token ${getToken()}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: "Update salons from Admin", content: encodedContent, sha: sha })
+        headers: { 
+          Authorization: `token ${getToken()}`, 
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ 
+          message: "Update salons list", 
+          content: encodedContent, 
+          sha: sha 
+        })
       });
-      if(!res.ok) alert('فشل الحفظ أونلاين، تحقق من صلاحيات المفتاح');
+      
+      if(!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'فشل الحفظ أونلاين');
+      }
     }
 
     async function generateSalonCode() {
       const name = document.getElementById('salonName').value.trim();
       const phone = document.getElementById('salonPhone').value.trim();
+      const btn = document.getElementById('saveBtn');
+
       if (!name || !phone) return alert('أدخل الاسم ورقم الهاتف');
 
       try {
+        btn.disabled = true;
+        btn.innerText = "جاري الحفظ أونلاين...";
+
         const db = await getDB();
         if(!db.content.salons) db.content.salons = {};
+        
         const code = 'SALON-' + Math.floor(100000 + Math.random() * 900000);
         db.content.salons[code] = { name, phone, code, queue: [] };
         
         await saveDB(db.content, db.sha);
+        
         document.getElementById('salonName').value = '';
         document.getElementById('salonPhone').value = '';
         alert(`تم الحفظ أونلاين بنجاح!\nالكود: ${code}`);
-        loadSalons();
-      } catch(e) { alert(e.message); }
+        
+        await loadSalons();
+
+      } catch(e) { 
+        alert("خطأ أثناء الحفظ: " + e.message); 
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "توليد الكود والحفظ أونلاين";
+      }
     }
 
     async function loadSalons() {
@@ -104,10 +127,12 @@
         const db = await getDB();
         const salons = db.content.salons || {};
         const keys = Object.keys(salons);
+        
         if (keys.length === 0) {
           salonsList.innerHTML = '<div class="empty-msg">لا يوجد صالونات بعد</div>';
           return;
         }
+        
         salonsList.innerHTML = keys.map(k => `
           <div class="salon-item">
             <div class="salon-title">${salons[k].name}</div>
@@ -118,7 +143,9 @@
             </div>
           </div>
         `).join('');
-      } catch(e) { salonsList.innerHTML = `<div class="empty-msg" style="color:#ef4444;">${e.message}</div>`; }
+      } catch(e) { 
+        salonsList.innerHTML = `<div class="empty-msg" style="color:#ef4444;">${e.message}</div>`; 
+      }
     }
 
     loadSalons();
