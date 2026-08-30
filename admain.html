@@ -70,16 +70,10 @@
     const REPO_NAME = 'Hamza-appp';
 
     function getToken() {
-      return localStorage.getItem('gh_token') || '';
-    }
+  const EncryptedToken = "ضع_النص_المشفر_هنا";
+  try { return atob(EncryptedToken); } catch(e) { return ""; }
+}
 
-    function saveToken() {
-      const token = document.getElementById('ghToken').value.trim();
-      if(!token) return alert('الرجاء أدخال مفتاح Token');
-      localStorage.setItem('gh_token', token);
-      alert('تم حفظ المفتاح بنجاح!');
-      loadSalons();
-    }
 
     async function getDB() {
       const token = getToken();
