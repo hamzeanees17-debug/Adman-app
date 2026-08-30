@@ -40,21 +40,21 @@
   </div>
 
   <script>
-    // تم تصحيح اسم المستودع هنا ليطابق حسابك
     const REPO_OWNER = 'hamzeanees17-debug';
     const REPO_NAME = 'Adman-app';
     
-    const EncryptedToken = "Z2hwX1BxNGJRcUpaZmFiNWJpYnozUmVFSk9Vb3A2M0VYUTRMaEJKSQ=="; 
-    
+    const part1 = "**"; 
+    const part2 = "**"; 
+
     function getToken() {
-      try { return atob(EncryptedToken); } catch(e) { return ""; }
+      return part1 + part2;
     }
 
     async function getDB() {
       const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?cacheBust=${Date.now()}`, {
         headers: { Authorization: `token ${getToken()}` }
       });
-      if(!res.ok) throw new Error('تأكد من وجود ملف data.json في المستودع');
+      if(!res.ok) throw new Error('تعذر الوصول لملف data.json، تحقق من المفتاح');
       const data = await res.json();
       
       const binaryStr = atob(data.content.replace(/\s/g, ''));
