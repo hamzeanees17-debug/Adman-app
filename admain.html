@@ -47,19 +47,14 @@
     const part1 = "ghp_ahcSfdWLBF"; 
     const part2 = "wjlAl4GEp2ybf1HsDBsE2qZZfI"; 
 
-    function getToken() { 
-      return (part1 + part2).trim(); 
-    }
+    function getToken() { return (part1 + part2).trim(); }
 
     async function getDB() {
-      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?cacheBust=${Date.now()}`, {
+      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?r=${Math.random()}`, {
         headers: { Authorization: `token ${getToken()}` },
         cache: 'no-store'
       });
-      if(!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'تعذر الوصول لملف data.json');
-      }
+      if(!res.ok) throw new Error('تعذر الوصول إلى قاعدة البيانات online');
       const data = await res.json();
       
       const binaryStr = atob(data.content.replace(/\s/g, ''));
@@ -82,16 +77,40 @@
           'Content-Type': 'application/json' 
         },
         body: JSON.stringify({ 
-          message: "Add salon code", 
+          message: "Add verified salon", 
           content: encodedContent, 
           sha: sha 
         })
       });
       
+      // التثبت الحقيقي من النجاح أونلاين
       if(!res.ok) {
         const err = await res.json();
-        throw new Error(err.message || 'فشل عملية الحفظ أونلاين');
+        throw new Error(err.message || 'فشل عملية التخزين في السيرفر');
       }
+
+      return true;
+    }
+
+    function renderSalons(salons) {
+      const salonsList = document.getElementById('salonsList');
+      const keys = Object.keys(salons || {});
+      
+      if (keys.length === 0) {
+        salonsList.innerHTML = '<div class="empty-msg">لا يوجد صالونات مسجلة بعد</div>';
+        return;
+      }
+      
+      salonsList.innerHTML = keys.map(k => `
+        <div class="salon-item">
+          <div class="salon-title">${salons[k].name}</div>
+          <div style="color:#94a3b8;font-size:14px;margin-bottom:8px;">📱 الهاتف: ${salons[k].phone}</div>
+          <div class="code-box">
+            <span>🔑 ${salons[k].code}</span>
+            <button class="copy-btn" onclick="navigator.clipboard.writeText('${salons[k].code}');alert('تم النسخ');">نسخ</button>
+          </div>
+        </div>
+      `).join('');
     }
 
     async function generateSalonCode() {
@@ -102,31 +121,33 @@
       const name = nameInput.value.trim();
       const phone = phoneInput.value.trim();
 
-      if (!name || !phone) {
-        alert('يرجى كتابة الاسم ورقم الهاتف أولاً');
-        return;
-      }
+      if (!name || !phone) return alert('يرجى إدخال اسم الصالون ورقم الهاتف أولاً');
 
       try {
         btn.disabled = true;
-        btn.innerText = "جاري الحفظ أونلاين...";
+        btn.innerText = "جاري التحقق والحفظ أونلاين...";
 
+        // 1. جلب البيانات والأشياء المحفوظة حالياً
         const db = await getDB();
         if(!db.content.salons) db.content.salons = {};
         
+        // 2. تجهيز كود الصالون
         const code = 'SALON-' + Math.floor(100000 + Math.random() * 900000);
         db.content.salons[code] = { name, phone, code, queue: [] };
         
+        // 3. محاولة الحفظ الفعلية في GitHub
         await saveDB(db.content, db.sha);
         
+        // 4. لا يتم إظهار الكود ولا تنظيف الخانات إلا بعد نجاح الـ Save تماماً
         nameInput.value = '';
         phoneInput.value = '';
-        alert(`تم الحفظ أونلاين بنجاح!\nالكود: ${code}`);
         
-        await loadSalons();
+        renderSalons(db.content.salons);
+        alert(`تم التسجيل والحفظ أونلاين بنجاح!\nكود الصالون المعتمد: ${code}`);
 
       } catch(e) { 
-        alert("تنبيه: " + e.message); 
+        // في حال وجود أي مشكلة أونلاين لن يعطيك الكود أبداً وسيطبع الخطأ
+        alert("لم يتم التسجيل! خطأ: " + e.message); 
       } finally {
         btn.disabled = false;
         btn.innerText = "توليد الكود والحفظ أونلاين";
@@ -134,29 +155,11 @@
     }
 
     async function loadSalons() {
-      const salonsList = document.getElementById('salonsList');
       try {
         const db = await getDB();
-        const salons = db.content.salons || {};
-        const keys = Object.keys(salons);
-        
-        if (keys.length === 0) {
-          salonsList.innerHTML = '<div class="empty-msg">لا يوجد صالونات بعد</div>';
-          return;
-        }
-        
-        salonsList.innerHTML = keys.map(k => `
-          <div class="salon-item">
-            <div class="salon-title">${salons[k].name}</div>
-            <div style="color:#94a3b8;font-size:14px;margin-bottom:8px;">📱 الهاتف: ${salons[k].phone}</div>
-            <div class="code-box">
-              <span>🔑 ${salons[k].code}</span>
-              <button class="copy-btn" onclick="navigator.clipboard.writeText('${salons[k].code}');alert('تم النسخ');">نسخ</button>
-            </div>
-          </div>
-        `).join('');
+        renderSalons(db.content.salons || {});
       } catch(e) { 
-        salonsList.innerHTML = `<div class="empty-msg" style="color:#ef4444;">${e.message}</div>`; 
+        document.getElementById('salonsList').innerHTML = `<div class="empty-msg" style="color:#ef4444;">${e.message}</div>`; 
       }
     }
 
