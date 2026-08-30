@@ -5,30 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>لوحة تحكم الإدارة 💈</title>
   <style>
-    :root {
-      --bg-color: #0f172a;
-      --card-bg: #1e293b;
-      --accent-color: #22c55e;
-      --accent-hover: #16a34a;
-      --text-color: #f8fafc;
-      --input-bg: #ffffff;
-      --border-color: #334155;
-    }
-    * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; }
+    :root { --bg-color: #0f172a; --card-bg: #1e293b; --accent-color: #22c55e; --text-color: #f8fafc; --border-color: #334155; }
+    * { box-sizing: border-box; font-family: system-ui, sans-serif; margin: 0; padding: 0; }
     body { background-color: var(--bg-color); color: var(--text-color); display: flex; justify-content: center; padding: 20px 15px; min-height: 100vh; }
     .container { width: 100%; max-width: 480px; }
-    h1 { text-align: center; font-size: 24px; margin-bottom: 20px; color: #fff; }
-    .card { background-color: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 1px solid var(--border-color); }
+    h1 { text-align: center; font-size: 24px; margin-bottom: 20px; }
+    .card { background-color: var(--card-bg); border-radius: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border-color); }
     .card h2 { font-size: 18px; text-align: center; margin-bottom: 15px; color: #cbd5e1; }
     .form-group { margin-bottom: 12px; }
-    label { display: block; margin-bottom: 6px; font-size: 14px; color: #94a3b8; }
-    input { width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 16px; background-color: var(--input-bg); color: #0f172a; outline: none; font-weight: 500; }
-    input:focus { border-color: var(--accent-color); }
-    .btn { width: 100%; background-color: var(--accent-color); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
-    .btn:active { background-color: var(--accent-hover); transform: scale(0.98); }
+    input { width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 16px; background: #fff; color: #0f172a; outline: none; }
+    .btn { width: 100%; background-color: var(--accent-color); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
     .salon-item { background: #0f172a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border-color); }
     .salon-title { font-size: 18px; font-weight: bold; color: var(--accent-color); margin-bottom: 6px; }
-    .salon-details { font-size: 14px; color: #94a3b8; margin-bottom: 8px; }
     .code-box { background: #334155; padding: 8px 12px; border-radius: 8px; font-family: monospace; font-size: 18px; text-align: center; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
     .copy-btn { background: #0284c7; color: white; border: none; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
     .empty-msg { text-align: center; color: #64748b; font-size: 15px; padding: 10px 0; }
@@ -37,101 +25,79 @@
 <body>
   <div class="container">
     <h1>لوحة تحكم الإدارة 💈</h1>
-
-    <div class="card">
-      <h2>إعدادات الربط (GitHub Token)</h2>
-      <div class="form-group">
-        <input type="password" id="ghToken" placeholder="أدخل GitHub Personal Access Token">
-      </div>
-      <button class="btn" style="background:#0284c7;" onclick="saveToken()">حفظ المفتاح</button>
-    </div>
-
+    
     <div class="card">
       <h2>إضافة صالون جديد</h2>
-      <div class="form-group">
-        <input type="text" id="salonName" placeholder="اسم الصالون (مثال: صالون )">
-      </div>
-      <div class="form-group">
-        <input type="tel" id="salonPhone" placeholder="رقم الهاتف (مثال: 0788457518)">
-      </div>
+      <div class="form-group"><input type="text" id="salonName" placeholder="اسم الصالون (مثال: صالون يسر)"></div>
+      <div class="form-group"><input type="tel" id="salonPhone" placeholder="رقم الهاتف (مثال: 0788457518)"></div>
       <button class="btn" onclick="generateSalonCode()">توليد الكود والحفظ أونلاين</button>
     </div>
 
     <div class="card">
       <h2>الصالونات المسجلة</h2>
-      <div id="salonsList">
-        <div class="empty-msg">جاري تحميل البيانات...</div>
-      </div>
+      <div id="salonsList"><div class="empty-msg">جاري تحميل البيانات...</div></div>
     </div>
   </div>
 
   <script>
     const REPO_OWNER = 'hamzeanees17-debug';
     const REPO_NAME = 'Hamza-appp';
-
+    
+    // المفتاح المشفر جاهز داخل الكود
+    const EncryptedToken = "Z2hwX1A1N0xLSTZQVjdJZFRnblloZ1dzSUlLVjdHaEd2azJwVVVvag=="; 
+    
     function getToken() {
-  const EncryptedToken = "Z2hwX1A1N0xLSTZQVjdJZFRnblloZ1dzSUlLVjdHaEd2azJwVVVvag==";
-  try { return atob(EncryptedToken); } catch(e) { return ""; }
-}
+      try { return atob(EncryptedToken); } catch(e) { return ""; }
+    }
 
-
+    // دالة جلب البيانات المعالجة للغة العربية
     async function getDB() {
-      const token = getToken();
-      if(!token) throw new Error('يرجى حفظ GitHub Token أولاً');
-      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
-        headers: { Authorization: `token ${token}` }
+      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?cacheBust=${Date.now()}`, {
+        headers: { Authorization: `token ${getToken()}` }
       });
+      if(!res.ok) throw new Error('تأكد من وجود ملف data.json في المستودع');
       const data = await res.json();
-      const contentStr = decodeURIComponent(escape(atob(data.content)));
+      
+      const binaryStr = atob(data.content.replace(/\s/g, ''));
+      const bytes = Uint8Array.from(binaryStr, c => c.charCodeAt(0));
+      const contentStr = new TextDecoder().decode(bytes);
+      
       return { content: JSON.parse(contentStr), sha: data.sha };
     }
 
+    // دالة حفظ البيانات المعالجة للغة العربية
     async function saveDB(content, sha) {
-      const token = getToken();
       const jsonString = JSON.stringify(content, null, 2);
-      const encodedContent = btoa(unescape(encodeURIComponent(jsonString)));
+      
+      const bytes = new TextEncoder().encode(jsonString);
+      const binaryStr = Array.from(bytes, b => String.fromCharCode(b)).join('');
+      const encodedContent = btoa(binaryStr);
 
-      await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
+      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
         method: 'PUT',
-        headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: "Update salons from Admin",
-          content: encodedContent,
-          sha: sha
-        })
+        headers: { Authorization: `token ${getToken()}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: "Update salons from Admin", content: encodedContent, sha: sha })
       });
-    }
-
-    function createRandomCode() {
-      return 'SALON-' + Math.floor(100000 + Math.random() * 900000).toString();
+      if(!res.ok) alert('فشل الحفظ أونلاين، تحقق من صلاحيات المفتاح');
     }
 
     async function generateSalonCode() {
       const name = document.getElementById('salonName').value.trim();
       const phone = document.getElementById('salonPhone').value.trim();
-      if (!name || !phone) return alert('الرجاء إدخال اسم الصالون ورقم الهاتف!');
+      if (!name || !phone) return alert('أدخل الاسم ورقم الهاتف');
 
       try {
         const db = await getDB();
         if(!db.content.salons) db.content.salons = {};
-
-        const code = createRandomCode();
-        db.content.salons[code] = {
-          name: name,
-          phone: phone,
-          code: code,
-          queue: [],
-          createdAt: new Date().toLocaleDateString('ar-EG')
-        };
-
+        const code = 'SALON-' + Math.floor(100000 + Math.random() * 900000);
+        db.content.salons[code] = { name, phone, code, queue: [] };
+        
         await saveDB(db.content, db.sha);
         document.getElementById('salonName').value = '';
         document.getElementById('salonPhone').value = '';
-        alert(`تم إضافة الصالون بنجاح!\nكود التفعيل: ${code}`);
+        alert(`تم الحفظ أونلاين بنجاح!\nالكود: ${code}`);
         loadSalons();
-      } catch(e) {
-        alert('خطأ: ' + e.message);
-      }
+      } catch(e) { alert(e.message); }
     }
 
     async function loadSalons() {
@@ -140,32 +106,24 @@
         const db = await getDB();
         const salons = db.content.salons || {};
         const keys = Object.keys(salons);
-
         if (keys.length === 0) {
           salonsList.innerHTML = '<div class="empty-msg">لا يوجد صالونات بعد</div>';
           return;
         }
-
-        salonsList.innerHTML = keys.map(k => {
-          const s = salons[k];
-          return `
-            <div class="salon-item">
-              <div class="salon-title">${s.name}</div>
-              <div class="salon-details">📱 الهاتف: ${s.phone}</div>
-              <div class="code-box">
-                <span>🔑 ${s.code}</span>
-                <button class="copy-btn" onclick="copyCode('${s.code}')">نسخ الكود</button>
-              </div>
+        salonsList.innerHTML = keys.map(k => `
+          <div class="salon-item">
+            <div class="salon-title">${salons[k].name}</div>
+            <div style="color:#94a3b8;font-size:14px;margin-bottom:8px;">📱 الهاتف: ${salons[k].phone}</div>
+            <div class="code-box">
+              <span>🔑 ${salons[k].code}</span>
+              <button class="copy-btn" onclick="navigator.clipboard.writeText('${salons[k].code}');alert('تم النسخ');">نسخ</button>
             </div>
-          `;
-        }).join('');
-      } catch(e) {
-        salonsList.innerHTML = `<div class="empty-msg" style="color:#ef4444;">${e.message}</div>`;
-      }
+          </div>
+        `).join('');
+      } catch(e) { salonsList.innerHTML = `<div class="empty-msg" style="color:#ef4444;">${e.message}</div>`; }
     }
 
-    document.getElementById('ghToken').value = getToken();
-    if(getToken()) loadSalons();
+    loadSalons();
   </script>
 </body>
 </html>
