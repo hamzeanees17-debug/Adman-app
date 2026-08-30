@@ -15,6 +15,7 @@
     .form-group { margin-bottom: 12px; }
     input { width: 100%; padding: 12px 15px; border-radius: 10px; border: 1px solid var(--border-color); font-size: 16px; background: #fff; color: #0f172a; outline: none; }
     .btn { width: 100%; background-color: var(--accent-color); color: white; border: none; padding: 14px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .btn:disabled { background-color: #475569; cursor: not-allowed; }
     .salon-item { background: #0f172a; padding: 15px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border-color); }
     .salon-title { font-size: 18px; font-weight: bold; color: var(--accent-color); margin-bottom: 6px; }
     .code-box { background: #334155; padding: 8px 12px; border-radius: 8px; font-family: monospace; font-size: 18px; text-align: center; color: #38bdf8; display: flex; justify-content: space-between; align-items: center; }
@@ -43,17 +44,22 @@
     const REPO_OWNER = 'hamzeanees17-debug';
     const REPO_NAME = 'Adman-app';
     
-    const part1 = ""ghp_ahcSfdWLBF"; 
+    const part1 = "ghp_ahcSfdWLBF"; 
     const part2 = "wjlAl4GEp2ybf1HsDBsE2qZZfI"; 
 
-    function getToken() { return part1 + part2; }
+    function getToken() { 
+      return (part1 + part2).trim(); 
+    }
 
     async function getDB() {
-      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?timestamp=${Date.now()}`, {
+      const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?cacheBust=${Date.now()}`, {
         headers: { Authorization: `token ${getToken()}` },
         cache: 'no-store'
       });
-      if(!res.ok) throw new Error('تعذر جلب ملف data.json');
+      if(!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'تعذر الوصول لملف data.json');
+      }
       const data = await res.json();
       
       const binaryStr = atob(data.content.replace(/\s/g, ''));
@@ -76,7 +82,7 @@
           'Content-Type': 'application/json' 
         },
         body: JSON.stringify({ 
-          message: "Update salons list", 
+          message: "Add salon code", 
           content: encodedContent, 
           sha: sha 
         })
@@ -84,16 +90,22 @@
       
       if(!res.ok) {
         const err = await res.json();
-        throw new Error(err.message || 'فشل الحفظ أونلاين');
+        throw new Error(err.message || 'فشل عملية الحفظ أونلاين');
       }
     }
 
     async function generateSalonCode() {
-      const name = document.getElementById('salonName').value.trim();
-      const phone = document.getElementById('salonPhone').value.trim();
+      const nameInput = document.getElementById('salonName');
+      const phoneInput = document.getElementById('salonPhone');
       const btn = document.getElementById('saveBtn');
 
-      if (!name || !phone) return alert('أدخل الاسم ورقم الهاتف');
+      const name = nameInput.value.trim();
+      const phone = phoneInput.value.trim();
+
+      if (!name || !phone) {
+        alert('يرجى كتابة الاسم ورقم الهاتف أولاً');
+        return;
+      }
 
       try {
         btn.disabled = true;
@@ -107,14 +119,14 @@
         
         await saveDB(db.content, db.sha);
         
-        document.getElementById('salonName').value = '';
-        document.getElementById('salonPhone').value = '';
+        nameInput.value = '';
+        phoneInput.value = '';
         alert(`تم الحفظ أونلاين بنجاح!\nالكود: ${code}`);
         
         await loadSalons();
 
       } catch(e) { 
-        alert("خطأ أثناء الحفظ: " + e.message); 
+        alert("تنبيه: " + e.message); 
       } finally {
         btn.disabled = false;
         btn.innerText = "توليد الكود والحفظ أونلاين";
