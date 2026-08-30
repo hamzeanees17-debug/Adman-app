@@ -40,17 +40,16 @@
   </div>
 
   <script>
+    // تم تصحيح اسم المستودع هنا ليطابق حسابك
     const REPO_OWNER = 'hamzeanees17-debug';
-    const REPO_NAME = 'Hamza-appp';
+    const REPO_NAME = 'Adman-app';
     
-    // المفتاح المشفر جاهز داخل الكود
     const EncryptedToken = "Z2hwX1A1N0xLSTZQVjdJZFRnblloZ1dzSUlLVjdHaEd2azJwVVVvag=="; 
     
     function getToken() {
       try { return atob(EncryptedToken); } catch(e) { return ""; }
     }
 
-    // دالة جلب البيانات المعالجة للغة العربية
     async function getDB() {
       const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json?cacheBust=${Date.now()}`, {
         headers: { Authorization: `token ${getToken()}` }
@@ -65,7 +64,6 @@
       return { content: JSON.parse(contentStr), sha: data.sha };
     }
 
-    // دالة حفظ البيانات المعالجة للغة العربية
     async function saveDB(content, sha) {
       const jsonString = JSON.stringify(content, null, 2);
       
