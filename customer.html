@@ -1,170 +1,163 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>حجز دور | صالونك</title>
-  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-  <style>
-    :root { --bg: #0b0f19; --card: #111827; --primary: #3b82f6; --accent: #10b981; --text: #f9fafb; --border: #374151; }
-    * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); padding: 15px; background-size: cover; }
-    .hidden { display: none !important; }
-    .card { background: rgba(17, 24, 39, 0.9); border-radius: 14px; padding: 16px; margin-bottom: 15px; border: 1px solid var(--border); }
-    .header-img { width: 100%; height: 120px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; }
-    .input { width: 100%; padding: 12px; margin: 6px 0; background: #1f2937; border: 1px solid var(--border); color: #fff; border-radius: 8px; }
-    .btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 14px; border-radius: 8px; font-weight: 800; cursor: pointer; }
-    .time-slot { display: inline-block; padding: 8px 12px; background: #1f2937; margin: 4px; border-radius: 6px; cursor: pointer; }
-    .time-slot.disabled { background: #374151; color: #9ca3af; text-decoration: line-through; cursor: not-allowed; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>حجز دور أونلاين - Customer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #0f172a; --accent: #0d9488; --bg: #f1f5f9; --surface: #ffffff; --text-dark: #0f172a; --text-muted: #64748b; }
+        body { font-family: 'Tajawal', sans-serif; background: var(--bg); margin: 0; padding: 20px 12px; color: var(--text-dark); display: flex; justify-content: center; align-items: center; min-height: 90vh; }
+        .app-container { width: 100%; max-width: 440px; }
+        .card { background: var(--surface); padding: 30px 24px; border-radius: 20px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08); border: 1px solid #e2e8f0; text-align: center; }
+        .logo-icon { width: 64px; height: 64px; background: #ccfbf1; color: var(--accent); border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 30px; margin: 0 auto 15px auto; }
+        h2 { margin: 0 0 8px 0; font-size: 22px; font-weight: 800; color: var(--primary); }
+        p.subtitle { margin: 0 0 24px 0; font-size: 14px; color: var(--text-muted); }
+        .form-group { text-align: right; margin-bottom: 16px; }
+        label { font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px; display: block; }
+        input, select { width: 100%; padding: 14px 16px; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 15px; font-family: inherit; box-sizing: border-box; background: #f8fafc; transition: 0.2s; }
+        input:focus, select:focus { outline: none; border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.15); }
+        .btn-primary { width: 100%; padding: 15px; background: var(--accent); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; font-family: inherit; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.25); transition: 0.2s; }
+        .btn-primary:active { transform: scale(0.98); }
+        .status-card { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 20px; border-radius: 16px; margin-top: 15px; }
+        .step { display: none; }
+        .step.active { display: block; }
+    </style>
 </head>
 <body>
-  <!-- اقتران بالصالون لمرة واحدة -->
-  <div id="pairSec" class="card">
-    <h2>الاقتران بالصالون ✂️</h2>
-    <input type="text" id="codeIn" class="input" placeholder="أدخل كود الصالون أو مسح QR">
-    <button class="btn" id="pairBtn">اقتران بالصفحة</button>
-  </div>
-
-  <div id="mainSec" class="hidden">
-    <img id="headerImg" class="header-img hidden">
-    <h2 id="salonTitle">صالون الحلاقة</h2>
-
-    <!-- التسجيل الأول -->
-    <div id="regSec" class="card">
-      <h4>تسجيل بياناتك لمرة واحدة</h4>
-      <input type="text" id="cName" class="input" placeholder="الاسم الشخصي">
-      <input type="tel" id="cPhone" class="input" placeholder="رقم الهاتف">
-      <input type="number" id="cAge" class="input" placeholder="العمر">
-      <button class="btn" onclick="saveCustomerInfo()">حفظ وحجز دور</button>
+<div class="app-container">
+    <div id="step1" class="card step active">
+        <div class="logo-icon">💈</div>
+        <h2>أهلاً بك عزيزي الزبون</h2>
+        <p.subtitle>أدخل بيانات الوصول للانضمام لجدول الدور أونلاين</p>
+        <div class="form-group">
+            <label>GitHub Personal Token</label>
+            <input type="password" id="ghToken" placeholder="أدخل مفتاح التفعيل">
+        </div>
+        <div class="form-group">
+            <label>كود الصالون</label>
+            <input type="text" id="salonCode" placeholder="مثال: SALON-123456">
+        </div>
+        <button class="btn-primary" onclick="verifySalon()">تحقق ومتابعة الحجز ←</button>
     </div>
 
-    <!-- حجز الموعد والدور -->
-    <div id="bookingSec" class="card hidden">
-      <h4>اختر الخدمة والموعد</h4>
-      <select id="srvSelect" class="input"></select>
-      
-      <h4>اختر الساعة (الأوقات الشاغرة)</h4>
-      <div id="timeSlotsContainer"></div>
-
-      <button class="btn" style="margin-top:10px;" onclick="confirmBooking()">تأكيد حجز الدور 🎫</button>
+    <div id="step2" class="card step">
+        <div class="logo-icon">✂️</div>
+        <h2 id="salonTitleDisplay">حجز موعد</h2>
+        <p class="subtitle">يرجى إدخال بياناتك لتأكيد دورك في القائمة</p>
+        <div class="form-group">
+            <label>الاسم الكامل</label>
+            <input type="text" id="custName" placeholder="أدخل اسمك الكريم">
+        </div>
+        <div class="form-group">
+            <label>رقم الهاتف</label>
+            <input type="tel" id="custPhone" placeholder="07XXXXXXXX">
+        </div>
+        <div class="form-group">
+            <label>الخدمة المطلوبة</label>
+            <select id="custService">
+                <option value="حلاقة شعر">حلاقة شعر</option>
+                <option value="حلاقة ذقن">حلاقة ذقن</option>
+                <option value="شعر وذقن">شعر وذقن كامل</option>
+                <option value="عناية بالبشرة والوجه">عناية بالبشرة والوجه</option>
+            </select>
+        </div>
+        <button class="btn-primary" onclick="confirmBooking()">تأكيد حجز الدور 🚀</button>
     </div>
 
-    <div id="myTicket" class="card hidden" style="text-align:center;">
-      <h3>رقم دورك الحالي</h3>
-      <h1 id="ticketNum" style="color:var(--accent); font-size:48px;">#0</h1>
-      <p id="queueStatus">بانتظار دورك...</p>
+    <div id="step3" class="card step">
+        <div class="logo-icon" style="background:#dcfce7; color:#16a34a;">✅</div>
+        <h2>تم تأكيد حجزك!</h2>
+        <p class="subtitle">تم إدراج اسمك في قائمة الانتظار بنجاح</p>
+        <div class="status-card">
+            <span style="font-size:14px; color:#166534; font-weight:bold;">ترتيبك الحالي في الدور</span>
+            <div id="queuePosition" style="font-size:42px; font-weight:800; color:#15803d; margin:10px 0;">#0</div>
+            <p id="bookingSummary" style="font-size:13px; color:#374151; margin:0;"></p>
+        </div>
     </div>
-  </div>
+</div>
 
-  <script>
-    const firebaseConfig = { databaseURL: "https://salon-system-hq-default-rtdb.firebaseio.com/" };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+<script>
+    const REPO_OWNER = 'hamzeanees17-debug';
+    const REPO_NAME = 'Hamza-appp';
+    let currentCode = '';
+    let token = '';
 
-    let mySalonCode = localStorage.getItem('cust_salon_code');
-    let selectedTime = null;
-
-    if (mySalonCode) initCustomer(mySalonCode);
-
-    document.getElementById('pairBtn').addEventListener('click', () => {
-      const c = document.getElementById('codeIn').value.trim();
-      db.ref('salons/' + c).once('value', snap => {
-        if(!snap.exists()) return alert('رمز الصالون غير صحيحة');
-        localStorage.setItem('cust_salon_code', c);
-        initCustomer(c);
-      });
-    });
-
-    function initCustomer(code) {
-      document.getElementById('pairSec').classList.add('hidden');
-      document.getElementById('mainSec').classList.remove('hidden');
-
-      db.ref(`salons/${code}`).on('value', snap => {
-        const data = snap.val();
-        document.getElementById('salonTitle').innerText = data.info.name;
-
-        // تطبيق الخلفيات والهوية
-        if (data.settings.bgUrl) document.body.style.backgroundImage = `url('${data.settings.bgUrl}')`;
-        if (data.settings.headerUrl) {
-          const img = document.getElementById('headerImg');
-          img.src = data.settings.headerUrl;
-          img.classList.remove('hidden');
-        }
-
-        // تحضير الخدمات
-        const srvSelect = document.getElementById('srvSelect');
-        srvSelect.innerHTML = '';
-        if (data.services) {
-          Object.keys(data.services).forEach(k => {
-            const s = data.services[k];
-            srvSelect.innerHTML += `<option value="${s.price}">${s.name} - ${s.price} JOD (${s.time} دقيقة)</option>`;
-          });
-        }
-
-        renderTimeSlots(data.queue || {});
-      });
-
-      if (localStorage.getItem('cust_name')) {
-        document.getElementById('regSec').classList.add('hidden');
-        document.getElementById('bookingSec').classList.remove('hidden');
-      }
-    }
-
-    function renderTimeSlots(queue) {
-      const container = document.getElementById('timeSlotsContainer');
-      container.innerHTML = '';
-      const times = ["04:00", "04:30", "05:00", "05:30", "06:00", "06:30", "07:00", "07:30", "08:00"];
-
-      const bookedTimes = Object.values(queue).map(q => q.time);
-
-      times.forEach(t => {
-        const isBooked = bookedTimes.includes(t);
-        const span = document.createElement('span');
-        span.className = `time-slot ${isBooked ? 'disabled' : ''}`;
-        span.innerText = t;
-        if (!isBooked) {
-          span.onclick = () => {
-            selectedTime = t;
-            alert('تم اختيار موعد: ' + t);
-          };
-        }
-        container.appendChild(span);
-      });
-    }
-
-    window.saveCustomerInfo = () => {
-      localStorage.setItem('cust_name', document.getElementById('cName').value);
-      localStorage.setItem('cust_phone', document.getElementById('cPhone').value);
-      document.getElementById('regSec').classList.add('hidden');
-      document.getElementById('bookingSec').classList.remove('hidden');
-    };
-
-    window.confirmBooking = () => {
-      if (!selectedTime) return alert('يرجى اختيار الوقت!');
-      
-      db.ref(`salons/${mySalonCode}/stats/totalCounter`).transaction(curr => {
-        let nextNum = (curr || 0) + 1;
-        if (nextNum > 1000) nextNum = 1; // التصفير التلقائي عند الوصول للرقم 1000
-        return nextNum;
-      }, (err, committed, snap) => {
-        const myNum = snap.val();
-        const name = localStorage.getItem('cust_name');
-        const phone = localStorage.getItem('cust_phone');
-        const srvText = document.getElementById('srvSelect').selectedOptions[0].text;
-        const price = document.getElementById('srvSelect').value;
-
-        db.ref(`salons/${mySalonCode}/queue`).push({
-          number: myNum, name, phone, service: srvText, price, time: selectedTime
-        }).then(() => {
-          document.getElementById('bookingSec').classList.add('hidden');
-          document.getElementById('myTicket').classList.remove('hidden');
-          document.getElementById('ticketNum').innerText = '#' + myNum;
+    async function getDB() {
+        const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
+            headers: { Authorization: `token ${token}` }
         });
-      });
-    };
-  </script>
+        const data = await res.json();
+        const contentStr = decodeURIComponent(escape(atob(data.content)));
+        return { content: JSON.parse(contentStr), sha: data.sha };
+    }
+
+    async function saveDB(content, sha) {
+        const jsonString = JSON.stringify(content, null, 2);
+        const encodedContent = btoa(unescape(encodeURIComponent(jsonString)));
+        await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/data.json`, {
+            method: 'PUT',
+            headers: { Authorization: `token ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                message: "Customer added to queue",
+                content: encodedContent,
+                sha: sha
+            })
+        });
+    }
+
+    async function verifySalon() {
+        token = document.getElementById('ghToken').value.trim();
+        const code = document.getElementById('salonCode').value.trim();
+        if(!token || !code) return alert('يرجى تعبئة كافة الحقول');
+
+        try {
+            const db = await getDB();
+            if(db.content.salons && db.content.salons[code]) {
+                currentCode = code;
+                document.getElementById('salonTitleDisplay').innerText = db.content.salons[code].name;
+                document.getElementById('step1').classList.remove('active');
+                document.getElementById('step2').classList.add('active');
+            } else {
+                alert('كود الصالون غير صحيح');
+            }
+        } catch(e) {
+            alert('حدث خطأ أثناء الاتصال بقاعدة البيانات');
+        }
+    }
+
+    async function confirmBooking() {
+        const name = document.getElementById('custName').value.trim();
+        const phone = document.getElementById('custPhone').value.trim();
+        const service = document.getElementById('custService').value;
+
+        if(!name || !phone) return alert('يرجى تعبئة الاسم ورقم الهاتف');
+
+        try {
+            const db = await getDB();
+            if(!db.content.salons[currentCode].queue) {
+                db.content.salons[currentCode].queue = [];
+            }
+
+            db.content.salons[currentCode].queue.push({
+                name: name,
+                phone: phone,
+                service: service,
+                time: new Date().toLocaleTimeString()
+            });
+
+            await saveDB(db.content, db.sha);
+
+            const pos = db.content.salons[currentCode].queue.length;
+            document.getElementById('queuePosition').innerText = `#${pos}`;
+            document.getElementById('bookingSummary').innerText = `الزبون: ${name} | الخدمة: ${service}`;
+
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step3').classList.add('active');
+        } catch(e) {
+            alert('حدث خطأ أثناء الحجز، يرجى المحاولة مرة أخرى');
+        }
+    }
+</script>
 </body>
 </html>
